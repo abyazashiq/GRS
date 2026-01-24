@@ -1,63 +1,166 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LogOut, Menu, X } from 'lucide-react';
 
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      router.push('/login');
+    } else {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    router.push('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get , edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+      {/* Navigation Bar */}
+      <nav className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <h1 className="text-2xl font-bold text-blue-600">GRS</h1>
+            </div>
+
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center gap-8">
+              <Link
+                href="/dashboard"
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="text-gray-700 hover:text-blue-600"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden pb-4 space-y-2">
+              <Link
+                href="/dashboard"
+                className="block text-gray-700 hover:text-blue-600 font-medium py-2 transition-colors"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+            Welcome to GRS <span className="text-blue-600">{user.name || user.email}</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Grievance Redressal System - SSN College of Engineering
+          </p>
+
+          {/* User Info Card */}
+          <div className="grid md:grid-cols-2 gap-6 mt-8">
+            <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="text-gray-900 font-medium">{user.email}</p>
+                </div>
+                {user.name && (
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="text-gray-900 font-medium">{user.name}</p>
+                  </div>
+                )}
+                {user.picture && (
+                  <div>
+                    <p className="text-sm text-gray-600">Profile Picture</p>
+                    <img
+                      src={user.picture}
+                      alt={user.name}
+                      className="w-16 h-16 rounded-lg mt-2"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+              <div className="space-y-3">
+                <Link
+                  href="/dashboard"
+                  className="block px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center font-medium"
+                >
+                  Go to Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
