@@ -72,10 +72,11 @@ const LoginPage = () => {
       if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userEmail', userData.email);
         localStorage.setItem('authToken', credential);
 
-        // Redirect to home
-        router.push('/');
+        // Redirect to dashboard
+        router.push('/dashboard');
       } else {
         setError('Please use your SSN Institute email address (@ssn.edu.in) to sign in.');
         setIsLoading(false);
