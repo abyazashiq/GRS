@@ -2,7 +2,8 @@
 
 **Last Updated**: March 3, 2026  
 **Project**: Grievance Redressal System (GRS)  
-**Framework**: Next.js 16 + React 19 + TypeScript + Supabase
+**Framework**: Next.js 16 + React 19 + TypeScript + Supabase  
+**Documentation**: AGENTS.md (Root)
 
 ---
 
@@ -60,6 +61,38 @@ npx tsc --noEmit
 
 # 4. Clear browser cache and localStorage
 # Dev Tools → Application → Clear Site Data
+```
+
+### Supabase RLS Blocking Access (Error: {})
+
+This error means Row-Level Security (RLS) policies aren't allowing your request:
+
+```sql
+-- In Supabase Dashboard → SQL Editor → New Query
+-- Fix permissions on all tables
+
+DROP POLICY IF EXISTS "Allow public read categories" ON categories;
+DROP POLICY IF EXISTS "Allow public read grievances" ON grievances;
+DROP POLICY IF EXISTS "Allow public read upvotes" ON upvotes;
+DROP POLICY IF EXISTS "Allow public read comments" ON comments;
+
+CREATE POLICY "Allow public read categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Allow public read grievances" ON grievances FOR SELECT USING (true);
+CREATE POLICY "Allow public read upvotes" ON upvotes FOR SELECT USING (true);
+CREATE POLICY "Allow public read comments" ON comments FOR SELECT USING (true);
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE grievances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE upvotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+```
+
+**Or disable RLS temporarily for testing:**
+```sql
+ALTER TABLE categories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE grievances DISABLE ROW LEVEL SECURITY;
+ALTER TABLE upvotes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE comments DISABLE ROW LEVEL SECURITY;
 ```
 
 ### Google OAuth Not Working
@@ -130,6 +163,7 @@ A complete **Grievance Redressal System** for institutions to manage student/sta
 | Category Management | ✅ Complete | Admin panel to add/delete categories |
 | Filtering | ✅ Complete | By category and status |
 | Timezone Handling | ✅ Complete | All times in user's local timezone |
+| Error Logging | ✅ Complete | Detailed error messages for debugging |
 
 ### Tech Stack
 
@@ -171,7 +205,8 @@ Deployment: Ready for Vercel/AWS
 1. In Supabase: SQL Editor → New Query
 2. Copy ALL content from grs/schema.sql
 3. Paste into editor and click Run
-4. ✅ Done - tables created automatically
+4. Fix RLS policies using SQL above if getting error {}
+5. ✅ Done - tables created automatically
 ```
 
 #### 3. **Get Google OAuth Credentials** (1 min)
@@ -254,6 +289,7 @@ Copy:
 SQL Editor → New Query → Paste schema.sql → Run
 Wait for complete execution (usually 5-10 seconds)
 Verify tables in Dashboard → Tables
+Fix RLS policies if getting error {} on data fetch
 ```
 
 #### Phase 2: Google OAuth Setup
@@ -335,7 +371,7 @@ d:\Link_from_C\GRS
 │   │   ├── layout.tsx                # Root layout
 │   │   └── page.tsx                  # Home/redirect
 │   ├── lib/
-│   │   ├── dateUtils.ts              # Timezone utilities (NEW)
+│   │   ├── dateUtils.ts              # Timezone utilities
 │   │   └── supabase/
 │   │       ├── client.ts             # Supabase client
 │   │       ├── db.ts                 # Database operations
@@ -343,18 +379,14 @@ d:\Link_from_C\GRS
 │   ├── public/                       # Static assets
 │   ├── schema.sql                    # Database schema
 │   ├── .env.local                    # Environment (git-ignored)
+│   ├── README.md                     # Project readme
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── eslint.config.mjs
 │   ├── next.config.ts
 │   └── postcss.config.mjs
-├── AGENTS.md                         # Agent development guidelines
-├── IMPLEMENTATION_SUMMARY.md         # Feature implementation details
-├── QUICK_START.md                    # 5-minute setup guide
-├── SETUP_GUIDE.md                    # Detailed setup instructions
-├── TIMING_FIX_SUMMARY.md             # Timezone fix documentation
-└── AI_DEVELOPMENT_GUIDE.md           # This file
-
+├── AGENTS.md                         # Comprehensive dev guide (this file)
+└── README.md                         # Project overview
 ```
 
 ---
@@ -503,6 +535,10 @@ try {
   const data = await fetchGrievances();
 } catch (error) {
   console.error('Failed to fetch grievances:', error);
+  // If error is empty object {}, likely RLS permission issue
+  if (error instanceof Error) {
+    console.error('Error message:', error.message);
+  }
   setError('Unable to load grievances. Please try again.');
 }
 
@@ -613,18 +649,21 @@ git commit -m "Initial commit"
 
 ## 🔄 Recent Changes & Fixes
 
-### Latest Fix: Timezone System (March 3, 2026)
+### Latest Fix: Error Logging & RLS Issues (March 3, 2026)
 
-**Problem**: Times displayed in UTC, not user's local timezone
+**Problem**: Error object showing as empty `{}`, unable to debug Supabase issues
 
-**Solution**: Created centralized timezone utilities
+**Solution**: 
+- Improved error logging in Dashboard.tsx and db.ts
+- Added detailed error messages to console
+- Documented RLS permission fixes
+- Consolidated all documentation into AGENTS.md
 
 **Files Changed**:
-- ✅ Created: `lib/dateUtils.ts`
-- ✅ Updated: `app/components/GrievanceCard.tsx`
-- ✅ Updated: `app/components/CommentsSection.tsx`
-- ✅ Updated: `app/components/GrievanceDetail.tsx`
-- ✅ Updated: `lib/supabase/db.ts`
+- ✅ Updated: `app/components/Dashboard.tsx` - Better error handling
+- ✅ Updated: `lib/supabase/db.ts` - Detailed error messages
+- ✅ Created: `AGENTS.md` - Master documentation
+- ✅ Deleted: Redundant documentation files
 
 **Testing**:
 ```bash
@@ -634,11 +673,15 @@ npm run build        # ✅ Passes
 npm run dev          # ✅ Runs successfully
 ```
 
-**Verification**:
-- [ ] Times show in your local timezone
-- [ ] Relative times ("X minutes ago") are accurate
-- [ ] Comments show correct timestamps
-- [ ] Status updates display correct time
+### Previous Fix: Timezone System
+
+**Problem**: Times displayed in UTC, not user's local timezone
+
+**Solution**: Created centralized timezone utilities
+
+**Files Changed**:
+- ✅ Created: `lib/dateUtils.ts`
+- ✅ Updated: All date display components
 
 ---
 
@@ -656,6 +699,7 @@ npm run dev          # ✅ Runs successfully
 | Categories | admin/categories/page.tsx | ✅ Complete | Initial |
 | Filtering | Filters.tsx | ✅ Complete | Initial |
 | Timezone Handling | dateUtils.ts | ✅ Complete | Mar 3, 2026 |
+| Error Logging | db.ts, Dashboard.tsx | ✅ Complete | Mar 3, 2026 |
 
 ### Potential Future Features 🚀
 
@@ -677,8 +721,6 @@ npm run dev          # ✅ Runs successfully
 ### Tables Overview
 
 ```sql
--- Users are implicit (stored in grievances via email)
-
 -- Categories: Types of grievances
 CREATE TABLE categories (
   id UUID PRIMARY KEY
@@ -728,6 +770,13 @@ CREATE TABLE comments (
 - **Unique Constraints**: Prevents duplicate upvotes by same user per grievance
 - **Foreign Keys**: Maintains referential integrity
 
+### RLS Policy Status
+
+⚠️ **IMPORTANT**: If you see error `{}` when fetching data:
+- RLS is enabled but policies may not be set correctly
+- See "Emergency Procedures" section for SQL to fix
+- Can disable RLS temporarily for testing
+
 ---
 
 ## ⚠️ Common Issues & Solutions
@@ -743,6 +792,19 @@ Solution:
 3. Check tsconfig.json has path alias: "@/*": ["./*"]
 4. Restart dev server: npm run dev
 5. Clear cache: rm -r .next
+```
+
+### Issue: Error {} - Empty Object (RLS Blocking)
+
+```
+Error: Supabase getCategories error: {}
+
+Solution:
+1. This is usually a Row-Level Security permission issue
+2. Run the RLS fix SQL (see Emergency Procedures section)
+3. Verify policies exist in Supabase Dashboard
+4. Check browser console for detailed error messages
+5. Try disabling RLS temporarily to test
 ```
 
 ### Issue: Google OAuth returns 400 error
@@ -778,12 +840,12 @@ Solution:
 ### Issue: Times showing wrong timezone
 
 ```
-Problem: Grievance shows 3:00 PM but posted at 3:00 PM local time
+Problem: Grievance shows wrong time
 
 Solution:
 1. Verify using formatLocalDateTime from dateUtils.ts
-2. Check browser timezone settings
-3. Ensure all times come from dateUtils functions
+2. All date functions imported from dateUtils
+3. Check browser timezone settings
 4. Restart dev server
 5. Check browser console for date parsing errors
 ```
@@ -809,7 +871,7 @@ npx tsc --noEmit
 ### Current Optimizations
 
 ```typescript
-// 1. Component memoization (future enhancement)
+// 1. Component memoization (can be enhanced)
 // const GrievanceCard = React.memo(({ ...props }) => {...});
 
 // 2. UseCallback for prevented re-renders
@@ -867,15 +929,15 @@ npm run build
 
 ### Getting Help
 
-1. **Check Documentation Files**
-   - Read SETUP_GUIDE.md (detailed instructions)
-   - Read QUICK_START.md (5-minute setup)
-   - Read this file (AI_DEVELOPMENT_GUIDE.md)
-
-2. **Check Browser Console**
-   - Dev Tools → Console tab
+1. **Check Browser Console**
+   - Dev Tools → Console tab (F12)
    - Look for error messages
    - Check network requests (Network tab)
+
+2. **Check This File**
+   - Search for your error message
+   - See Common Issues section
+   - Check Emergency Procedures
 
 3. **Clear Cache & Restart**
    ```bash
@@ -895,12 +957,18 @@ npm run build
 ## 🎯 Update Log
 
 ### March 3, 2026
+- ✅ Improved error logging for better debugging
+- ✅ Added RLS permission fixes to emergency procedures
+- ✅ Moved all documentation to AGENTS.md
+- ✅ Deleted redundant documentation files
+- ✅ Comprehensive test passed (lint + tsc + build)
+
+### March 3, 2026 (Earlier)
 - ✅ Created `lib/dateUtils.ts` for timezone handling
 - ✅ Updated all components to use timezone utilities
 - ✅ Fixed times displaying in user's local timezone
-- ✅ Comprehensive test passed (lint + tsc + build)
 
-### Initial Release (Date Unknown)
+### Initial Release
 - ✅ Implemented core grievance system
 - ✅ Google OAuth authentication
 - ✅ Dashboard with filtering
@@ -924,7 +992,7 @@ npm run build
 1. Update relevant section
 2. Add entry to "🎯 Update Log" with date
 3. Note what changed and where
-4. Commit with message: "docs: update AI_DEVELOPMENT_GUIDE - [feature/fix]"
+4. Commit with message: "docs: update AGENTS.md - [feature/fix]"
 
 ---
 
@@ -938,15 +1006,16 @@ npm run build
 5. Update "Recent Changes & Fixes" section with what was done
 
 **Priority order when debugging:**
-1. Check error messages in console
-2. Verify environment variables
+1. Check error messages in browser console (F12)
+2. Verify environment variables in .env.local
 3. Check TypeScript types match
 4. Review recent changes in this guide
-5. Clear all caches and rebuild
+5. Clear all caches: `rm -r .next node_modules && npm install`
 
 ---
 
 **Last Maintained By**: AI Assistant  
 **Last Updated**: March 3, 2026  
 **Status**: ✅ Active Development  
+**Documentation Location**: AGENTS.md (Root)  
 **Next Review**: When next feature is added or issue occurs
