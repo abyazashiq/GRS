@@ -74,6 +74,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     } catch (err) {
       console.error('Failed to fetch data:', err);
+      if (err instanceof Error) {
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+      }
+      setGrievances([]);
+      setCategories([]);
     } finally {
       setLoading(false);
     }

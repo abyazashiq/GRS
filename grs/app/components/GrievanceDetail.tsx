@@ -6,6 +6,7 @@ import { ChevronLeft, User, Clock, ThumbsUp } from 'lucide-react';
 import Link from 'next/link';
 import { CommentsSection } from '@/app/components/CommentsSection';
 import { getGrievanceById, addUpvote, removeUpvote, getUpvotes } from '@/lib/supabase/db';
+import { formatLocalDateTime } from '@/lib/dateUtils';
 
 interface GrievanceDetailProps {
   userEmail: string | null;
@@ -89,15 +90,7 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
     Other: 'bg-gray-100 text-gray-800',
   } as Record<string, string>;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const formatDate = formatLocalDateTime;
 
   if (loading) {
     return (

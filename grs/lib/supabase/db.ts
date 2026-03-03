@@ -40,7 +40,10 @@ export async function getGrievances(
     { ascending: false }
   );
 
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase getGrievances error:', error);
+    throw new Error(`Failed to fetch grievances: ${error.message}`);
+  }
 
   return data as any[];
 }
@@ -96,9 +99,11 @@ export async function createGrievance(
 }
 
 export async function updateGrievanceStatus(id: string, status: 'open' | 'in-progress' | 'resolved') {
+  // Use UTC ISO timestamp for consistency with database timezone storage
+  const updated_at = new Date().toISOString();
   const { data, error } = await supabase
     .from('grievances')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, updated_at })
     .eq('id', id)
     .select()
     .single();
@@ -214,7 +219,10 @@ export async function getCategories() {
     .select('*')
     .order('name', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Supabase getCategories error:', error);
+    throw new Error(`Failed to fetch categories: ${error.message}`);
+  }
   return data as Category[];
 }
 
