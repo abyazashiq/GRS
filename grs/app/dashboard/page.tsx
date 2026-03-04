@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dashboard } from '@/app/components/Dashboard';
+import { getUserByEmail } from '@/lib/supabase/db';
 
 declare global {
   interface Window {
@@ -12,6 +13,7 @@ declare global {
 
 export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'student' | 'teacher' | 'admin' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -20,12 +22,29 @@ export default function DashboardPage() {
     const storedEmail = localStorage.getItem('userEmail');
     if (storedEmail) {
       setUserEmail(storedEmail);
+      // Fetch user role from database
+      fetchUserRole(storedEmail);
     } else {
       // Redirect to login if not authenticated
       router.push('/login');
     }
-    setIsLoading(false);
   }, [router]);
+
+  const fetchUserRole = async (email: string) => {
+    try {
+      const user = await getUserByEmail(email);
+      if (user) {
+        setUserRole(user.role as 'student' | 'teacher' | 'admin');
+      } else {
+        setUserRole('student'); // Default to student
+      }
+    } catch (err) {
+      console.error('Failed to fetch user role:', err);
+      setUserRole('student');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('userEmail');
@@ -58,5 +77,5 @@ export default function DashboardPage() {
     return null;
   }
 
-  return <Dashboard userEmail={userEmail} onLogout={handleLogout} />;
+  return <Dashboard userEmail={userEmail} userRole={userRole} onLogout={handleLogout} />;
 }

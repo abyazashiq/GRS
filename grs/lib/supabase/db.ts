@@ -6,7 +6,9 @@ import { Grievance, Comment, Category, Upvote } from './types';
 export async function getGrievances(
   category?: string,
   status?: string,
-  sortBy: 'recent' | 'upvotes' = 'recent'
+  sortBy: 'recent' | 'upvotes' = 'recent',
+  userEmail?: string,
+  userRole?: 'student' | 'teacher' | 'admin'
 ) {
   let query = supabase
     .from('grievances')
@@ -20,6 +22,7 @@ export async function getGrievances(
       author_id,
       author_email,
       is_anonymous,
+      visibility,
       created_at,
       updated_at,
       upvotes:upvotes(count),
@@ -45,7 +48,22 @@ export async function getGrievances(
     throw new Error(`Failed to fetch grievances: ${error.message}`);
   }
 
-  return data as any[];
+  // Filter based on visibility and user role
+  return (data || []).filter((grievance: any) => {
+    // Admins and teachers can see all grievances
+    if (userRole === 'admin' || userRole === 'teacher') {
+      return true;
+    }
+
+    // Students can see:
+    // 1. Their own grievances (regardless of visibility)
+    // 2. Public grievances from others
+    if (grievance.author_email === userEmail) {
+      return true;
+    }
+
+    return grievance.visibility === 'public';
+  });
 }
 
 export async function getGrievanceById(id: string) {
@@ -78,6 +96,7 @@ export async function createGrievance(
   category: string,
   authorEmail: string | null,
   isAnonymous: boolean,
+  visibility: 'private' | 'public' = 'private',
   authorId?: string | null
 ) {
   const { data, error } = await supabase
@@ -90,6 +109,7 @@ export async function createGrievance(
       author_id: authorId || null,
       author_email: isAnonymous ? null : authorEmail,
       is_anonymous: isAnonymous,
+      visibility,
     })
     .select()
     .single();
@@ -244,4 +264,177 @@ export async function deleteCategory(id: string) {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+// ============ USERS ============
+
+export async function getUserByEmail(email: string) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows found, which is okay
+    throw error;
+  }
+  return data || null;
+}
+
+export async function createUser(email: string, fullName?: string, role: 'student' | 'teacher' | 'admin' = 'student') {
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      email,
+      full_name: fullName || null,
+      role,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUserRole(email: string, role: 'student' | 'teacher' | 'admin') {
+  const { data, error } = await supabase
+    .from('users')
+    .update({ role })
+    .eq('email', email)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getAllUsers(role?: 'student' | 'teacher' | 'admin') {
+  let query = supabase.from('users').select('*');
+
+  if (role) {
+    query = query.eq('role', role);
+  }
+
+  const { data, error } = await query.order('email', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+// ============ GRIEVANCE ASSIGNMENTS ============
+
+export async function assignGrievanceToTeacher(
+  grievanceId: string,
+  teacherEmail: string,
+  assignedByEmail: string
+) {
+  const { data, error } = await supabase
+    .from('grievance_assignments')
+    .insert({
+      grievance_id: grievanceId,
+      teacher_email: teacherEmail,
+      assigned_by_email: assignedByEmail,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getTeacherAssignments(teacherEmail: string) {
+  const { data, error } = await supabase
+    .from('grievance_assignments')
+    .select('id, grievance_id, teacher_email, assigned_at')
+    .eq('teacher_email', teacherEmail)
+    .order('assigned_at', { ascending: false });
+
+  if (error) throw error;
+
+  // Fetch grievances separately to avoid Supabase foreign key issues
+  if (data && data.length > 0) {
+    const grievanceIds = data.map((a: any) => a.grievance_id);
+    const { data: grievances, error: grievError } = await supabase
+      .from('grievances')
+      .select('*')
+      .in('id', grievanceIds);
+
+    if (grievError) throw grievError;
+
+    // Map grievances back to assignments
+    return data.map((a: any) => ({
+      ...a,
+      grievance: grievances?.find((g: any) => g.id === a.grievance_id),
+    }));
+  }
+
+  return [];
+}
+
+export async function unassignGrievance(grievanceId: string, teacherEmail: string) {
+  const { error } = await supabase
+    .from('grievance_assignments')
+    .delete()
+    .eq('grievance_id', grievanceId)
+    .eq('teacher_email', teacherEmail);
+
+  if (error) throw error;
+}
+
+// ============ TEACHER RESPONSES ============
+
+export async function addTeacherResponse(
+  grievanceId: string,
+  teacherEmail: string,
+  responseText: string,
+  isOfficial: boolean = true
+) {
+  const { data, error } = await supabase
+    .from('teacher_responses')
+    .insert({
+      grievance_id: grievanceId,
+      teacher_email: teacherEmail,
+      response_text: responseText,
+      is_official: isOfficial,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getTeacherResponsesForGrievance(grievanceId: string) {
+  const { data, error } = await supabase
+    .from('teacher_responses')
+    .select('*')
+    .eq('grievance_id', grievanceId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+// ============ ADMIN STATISTICS ============
+
+export async function getGrirvanceStatistics() {
+  const { data, error } = await supabase.from('grievances').select('*', { count: 'exact' });
+
+  if (error) throw error;
+
+  const byStatus = {
+    open: 0,
+    'in-progress': 0,
+    resolved: 0,
+  };
+
+  data?.forEach((g: any) => {
+    byStatus[g.status as keyof typeof byStatus]++;
+  });
+
+  return {
+    total: data?.length || 0,
+    byStatus,
+  };
 }

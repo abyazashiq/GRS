@@ -17,6 +17,7 @@ import {
 
 interface DashboardProps {
   userEmail: string | null;
+  userRole: 'student' | 'teacher' | 'admin' | null;
   onLogout: () => void;
 }
 
@@ -28,6 +29,7 @@ interface GrievanceData {
   status: 'open' | 'in-progress' | 'resolved';
   author_email: string | null;
   is_anonymous: boolean;
+  visibility: 'private' | 'public';
   created_at: string;
   upvotes: Array<{ count: number }>;
   comments: Array<{ count: number }>;
@@ -35,6 +37,7 @@ interface GrievanceData {
 
 export const Dashboard: React.FC<DashboardProps> = ({
   userEmail,
+  userRole,
   onLogout,
 }) => {
   const [grievances, setGrievances] = useState<GrievanceData[]>([]);
@@ -53,7 +56,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     try {
       setLoading(true);
       const [grievancesData, categoriesData] = await Promise.all([
-        getGrievances(selectedCategory || undefined, selectedStatus || undefined),
+        getGrievances(
+          selectedCategory || undefined,
+          selectedStatus || undefined,
+          'recent',
+          userEmail || undefined,
+          userRole || undefined
+        ),
         getCategories(),
       ]);
 
@@ -127,10 +136,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              GRS - Grievance Redressal System
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                GRS - Grievance Redressal System
+              </h1>
+              <span className="px-3 py-1 bg-gray-200 text-gray-800 text-xs font-semibold rounded-full dark:bg-gray-700 dark:text-gray-200">
+                Student
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Welcome, {userEmail ? userEmail.split('@')[0] : 'Guest'}
             </p>
           </div>
@@ -144,7 +158,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               New Grievance
             </button>
 
-            {userEmail && (
+            {userRole === 'admin' && (
               <Link
                 href="/admin/categories"
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"

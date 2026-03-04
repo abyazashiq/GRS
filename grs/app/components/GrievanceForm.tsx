@@ -19,6 +19,7 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [visibility, setVisibility] = useState<'private' | 'public'>('private');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -68,13 +69,15 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
         description,
         category,
         userEmail,
-        isAnonymous
+        isAnonymous,
+        visibility
       );
 
       setSuccess(true);
       setTitle('');
       setDescription('');
       setIsAnonymous(false);
+      setVisibility('private');
 
       setTimeout(() => {
         onSuccess();
@@ -178,6 +181,57 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
             >
               Submit as anonymous
             </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Visibility
+            </label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setVisibility('private')}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  checked={visibility === 'private'}
+                  onChange={() => setVisibility('private')}
+                  className="w-4 h-4 text-blue-600"
+                  disabled={loading || success}
+                />
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                    Private
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Only you can see this grievance
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setVisibility('public')}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="public"
+                  checked={visibility === 'public'}
+                  onChange={() => setVisibility('public')}
+                  className="w-4 h-4 text-blue-600"
+                  disabled={loading || success}
+                />
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                    Public
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Everyone can see this grievance
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

@@ -4,3 +4,4 @@ export { GrievanceDetail } from './GrievanceDetail';
 export { GrievanceForm } from './GrievanceForm';
 export { CommentsSection } from './CommentsSection';
 export { Filters } from './Filters';
+export { ProtectedPage } from './ProtectedPage';

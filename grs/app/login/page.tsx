@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Moon, Sun, Building2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getUserByEmail, createUser } from '@/lib/supabase/db';
 
 declare global {
   interface Window {
@@ -50,7 +51,7 @@ const LoginPage = () => {
     };
   }, []);
 
-  const handleGoogleCallback = (response: any) => {
+  const handleGoogleCallback = async (response: any) => {
     setIsLoading(true);
     setError('');
 
@@ -68,17 +69,39 @@ const LoginPage = () => {
 
       const userData = JSON.parse(jsonPayload);
 
-      // Check if email is from @ssn.edu.in domain
-      if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
+      // Check if email is from @ssn.edu.in domain (TEMPORARILY DISABLED - allowing all emails)
+      // if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
+      if (userData.email) {
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userEmail', userData.email);
         localStorage.setItem('authToken', credential);
 
-        // Redirect to dashboard
-        router.push('/dashboard');
+        // Fetch or create user in database
+        try {
+          let user = await getUserByEmail(userData.email);
+          
+          // If user doesn't exist, create them as a student
+          if (!user) {
+            user = await createUser(userData.email, userData.name, 'student');
+          }
+
+          // Redirect based on user role
+          const redirectPath =
+            user.role === 'admin'
+              ? '/admin/dashboard'
+              : user.role === 'teacher'
+                ? '/teacher/dashboard'
+                : '/dashboard';
+
+          router.push(redirectPath);
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+          // Fallback to student dashboard if database fails
+          router.push('/dashboard');
+        }
       } else {
-        setError('Please use your SSN Institute email address (@ssn.edu.in) to sign in.');
+        setError('Sign-in failed. Please try again.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -172,14 +195,14 @@ const LoginPage = () => {
             {/* Info Box */}
             <div className={`mt-6 p-4 rounded-lg border ${
               isDark 
-                ? 'bg-blue-900/20 border-blue-800 text-blue-300' 
-                : 'bg-blue-50 border-blue-200 text-blue-700'
+                ? 'bg-green-900/20 border-green-800 text-green-300' 
+                : 'bg-green-50 border-green-200 text-green-700'
             }`}>
               <p className="text-sm font-medium mb-1">
-                📧 SSN Email Required
+                ✅ Any Email Accepted (Temporary)
               </p>
               <p className="text-xs opacity-90">
-                You must use your @ssn.edu.in email address to access the Grievance Redressal System.
+                All email addresses are now accepted. Sign in with any Google account.
               </p>
             </div>
 

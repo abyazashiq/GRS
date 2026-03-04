@@ -1,6 +1,6 @@
 # 📘 GRS - Comprehensive AI Development Guide
 
-**Last Updated**: March 3, 2026  
+**Last Updated**: March 3, 2026 (Admin & Teacher Panels Added)  
 **Project**: Grievance Redressal System (GRS)  
 **Framework**: Next.js 16 + React 19 + TypeScript + Supabase  
 **Documentation**: AGENTS.md (Root)
@@ -354,17 +354,21 @@ d:\Link_from_C\GRS
 │   ├── app/
 │   │   ├── components/
 │   │   │   ├── CommentsSection.tsx   # Comment management
-│   │   │   ├── Dashboard.tsx         # Main dashboard
+│   │   │   ├── Dashboard.tsx         # Main student dashboard
 │   │   │   ├── Filters.tsx           # Filter sidebar
 │   │   │   ├── GrievanceCard.tsx     # Card component
 │   │   │   ├── GrievanceDetail.tsx   # Detail page
-│   │   │   ├── GrievanceForm.tsx     # Create form
+│   │   │   ├── GrievanceForm.tsx     # Create form with visibility toggle
+│   │   │   ├── ProtectedPage.tsx     # Role-based page wrapper
 │   │   │   └── index.ts              # Component exports
 │   │   ├── admin/
-│   │   │   └── categories/page.tsx   # Category management
+│   │   │   ├── categories/page.tsx   # Category management
+│   │   │   └── dashboard/page.tsx    # Admin dashboard (NEW)
+│   │   ├── teacher/
+│   │   │   └── dashboard/page.tsx    # Teacher dashboard (NEW)
 │   │   ├── auth/
 │   │   │   └── [...nextauth]/        # NextAuth setup
-│   │   ├── dashboard/page.tsx
+│   │   ├── dashboard/page.tsx        # Student dashboard (updated)
 │   │   ├── grievance/[id]/page.tsx
 │   │   ├── login/page.tsx
 │   │   ├── globals.css               # Global styles
@@ -372,12 +376,13 @@ d:\Link_from_C\GRS
 │   │   └── page.tsx                  # Home/redirect
 │   ├── lib/
 │   │   ├── dateUtils.ts              # Timezone utilities
+│   │   ├── roleUtils.ts              # Role-based access control (NEW)
 │   │   └── supabase/
 │   │       ├── client.ts             # Supabase client
-│   │       ├── db.ts                 # Database operations
+│   │       ├── db.ts                 # Database operations (updated)
 │   │       └── types.ts              # TypeScript interfaces
 │   ├── public/                       # Static assets
-│   ├── schema.sql                    # Database schema
+│   ├── schema.sql                    # Database schema (updated with roles)
 │   ├── .env.local                    # Environment (git-ignored)
 │   ├── README.md                     # Project readme
 │   ├── package.json
@@ -649,7 +654,35 @@ git commit -m "Initial commit"
 
 ## 🔄 Recent Changes & Fixes
 
-### Latest Fix: Error Logging & RLS Issues (March 3, 2026)
+### Latest Feature: Admin & Teacher Panels + Role-Based Access (March 3, 2026)
+
+**Features Added**:
+- Complete admin dashboard with statistics, grievance management, user role assignment
+- Teacher dashboard with assigned grievances, status updates, and official responses
+- Role-based access control (student, teacher, admin)
+- Grievance visibility system (private = only author + admins/teachers, public = everyone)
+- Students can see their own grievances + public grievances
+- Automatic user role assignment and promotion system
+
+**Files Changed**:
+- ✅ Updated: `schema.sql` - Added users, grievance_assignments, teacher_responses tables + visibility field
+- ✅ Updated: `lib/supabase/db.ts` - Added user, assignment, response, and statistics functions
+- ✅ Created: `lib/roleUtils.ts` - Role hierarchy and access control utilities
+- ✅ Created: `app/components/ProtectedPage.tsx` - Role-based page protection wrapper
+- ✅ Created: `app/admin/dashboard/page.tsx` - Admin panel (statistics, grievances, users, categories)
+- ✅ Created: `app/teacher/dashboard/page.tsx` - Teacher panel (assigned grievances, responses)
+- ✅ Updated: `app/components/GrievanceForm.tsx` - Visibility toggle (private/public)
+- ✅ Updated: `app/dashboard/page.tsx` - Fetch user role from database
+- ✅ Updated: `app/components/Dashboard.tsx` - Pass user role to grievance filtering
+
+**Testing**:
+```bash
+npm run lint          # ✅ Passes
+npx tsc --noEmit     # ✅ Passes
+npm run build        # ✅ Passes (production build successful)
+```
+
+### Previous Fix: Error Logging & RLS Issues (March 3, 2026)
 
 **Problem**: Error object showing as empty `{}`, unable to debug Supabase issues
 
@@ -663,15 +696,6 @@ git commit -m "Initial commit"
 - ✅ Updated: `app/components/Dashboard.tsx` - Better error handling
 - ✅ Updated: `lib/supabase/db.ts` - Detailed error messages
 - ✅ Created: `AGENTS.md` - Master documentation
-- ✅ Deleted: Redundant documentation files
-
-**Testing**:
-```bash
-npm run lint          # ✅ Passes
-npx tsc --noEmit     # ✅ Passes
-npm run build        # ✅ Passes
-npm run dev          # ✅ Runs successfully
-```
 
 ### Previous Fix: Timezone System
 
@@ -700,6 +724,12 @@ npm run dev          # ✅ Runs successfully
 | Filtering | Filters.tsx | ✅ Complete | Initial |
 | Timezone Handling | dateUtils.ts | ✅ Complete | Mar 3, 2026 |
 | Error Logging | db.ts, Dashboard.tsx | ✅ Complete | Mar 3, 2026 |
+| Admin Dashboard | admin/dashboard/page.tsx | ✅ Complete | Mar 3, 2026 |
+| Teacher Dashboard | teacher/dashboard/page.tsx | ✅ Complete | Mar 3, 2026 |
+| Role-Based Access | roleUtils.ts, ProtectedPage.tsx | ✅ Complete | Mar 3, 2026 |
+| Grievance Visibility | GrievanceForm.tsx, db.ts | ✅ Complete | Mar 3, 2026 |
+| User Management | admin/dashboard/page.tsx | ✅ Complete | Mar 3, 2026 |
+| Grievance Assignment | admin/dashboard/page.tsx, teacher/dashboard/page.tsx | ✅ Complete | Mar 3, 2026 |
 
 ### Potential Future Features 🚀
 
@@ -713,6 +743,10 @@ npm run dev          # ✅ Runs successfully
 - [ ] Automated follow-up reminders
 - [ ] User reputation system
 - [ ] Grievance templates
+- [ ] Bulk user import (CSV)
+- [ ] Custom workflow stages
+- [ ] Escalation rules
+- [ ] Response templates
 
 ---
 
@@ -956,14 +990,26 @@ npm run build
 
 ## 🎯 Update Log
 
-### March 3, 2026
+### March 3, 2026 (Latest)
+- ✅ Created admin dashboard with statistics, grievance management, and user role assignment
+- ✅ Created teacher dashboard with assigned grievances and response system
+- ✅ Implemented role-based access control (student, teacher, admin)
+- ✅ Added grievance visibility system (private/public)
+- ✅ Created ProtectedPage component for role-based route protection
+- ✅ Created roleUtils.ts for role hierarchy and access utilities
+- ✅ Updated schema.sql with users, grievance_assignments, teacher_responses tables
+- ✅ Updated getGrievances to filter based on user role and visibility
+- ✅ Added visibility toggle to GrievanceForm
+- ✅ Fixed teacher dashboard Supabase query issues
+- ✅ Comprehensive tests passed (lint + tsc + build)
+
+### March 3, 2026 (Earlier)
 - ✅ Improved error logging for better debugging
 - ✅ Added RLS permission fixes to emergency procedures
 - ✅ Moved all documentation to AGENTS.md
 - ✅ Deleted redundant documentation files
-- ✅ Comprehensive test passed (lint + tsc + build)
 
-### March 3, 2026 (Earlier)
+### March 3, 2026 (Initial)
 - ✅ Created `lib/dateUtils.ts` for timezone handling
 - ✅ Updated all components to use timezone utilities
 - ✅ Fixed times displaying in user's local timezone
