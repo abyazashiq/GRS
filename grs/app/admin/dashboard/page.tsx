@@ -287,12 +287,18 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Manage Categories Link */}
-          <div className="mt-8 flex gap-4 justify-center">
+          <div className="mt-8 flex gap-4 justify-center flex-wrap">
             <Link
               href="/admin/categories"
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               Manage Categories
+            </Link>
+            <Link
+              href="/admin/sections"
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+            >
+              Section Class Advisors
             </Link>
             <Link
               href="/dashboard"

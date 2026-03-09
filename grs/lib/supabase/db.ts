@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { Grievance, Comment, Category, Upvote } from './types';
+import { Grievance, Comment, Category, Upvote, SectionAdvisor } from './types';
 
 // ============ GRIEVANCES ============
 
@@ -437,4 +437,59 @@ export async function getGrirvanceStatistics() {
     total: data?.length || 0,
     byStatus,
   };
+}
+
+// ============ SECTION ADVISORS ============
+
+export async function getSectionAdvisors() {
+  const { data, error } = await supabase
+    .from('section_advisors')
+    .select('*')
+    .order('year', { ascending: true });
+
+  if (error) throw error;
+  return data as SectionAdvisor[];
+}
+
+export async function getSectionAdvisorForStudent(studentEmail: string) {
+  // Look up the student's year and section first
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('year, section')
+    .eq('email', studentEmail)
+    .single();
+
+  if (userError || !user || !user.year || !user.section) return null;
+
+  const { data, error } = await supabase
+    .from('section_advisors')
+    .select('*')
+    .eq('year', user.year)
+    .eq('section', user.section)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data as SectionAdvisor | null;
+}
+
+export async function resolveGrievanceTeacher(
+  categoryName: string,
+  authorEmail: string | null
+): Promise<string | null> {
+  // 1. Look up the category's directly assigned teacher
+  const { data: category } = await supabase
+    .from('categories')
+    .select('assigned_teacher_email')
+    .eq('name', categoryName)
+    .single();
+
+  if (category?.assigned_teacher_email) {
+    return category.assigned_teacher_email as string;
+  }
+
+  // 2. Category is "general" — fall back to the student's class advisor
+  if (!authorEmail) return null;
+
+  const advisor = await getSectionAdvisorForStudent(authorEmail);
+  return advisor?.teacher_email ?? null;
 }

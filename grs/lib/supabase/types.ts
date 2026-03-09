@@ -17,7 +17,18 @@ export interface Category {
   id: string;
   name: string;
   description: string | null;
+  assigned_teacher_email: string | null;
   created_at: string;
+}
+
+export interface SectionAdvisor {
+  id: string;
+  year: string;
+  section: string;
+  teacher_email: string;
+  assigned_by_email: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Upvote {

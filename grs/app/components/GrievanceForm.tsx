@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle } from 'lucide-react';
-import { getCategories, createGrievance } from '@/lib/supabase/db';
+import { getCategories } from '@/lib/supabase/db';
 
 interface GrievanceFormProps {
   userEmail: string | null;
@@ -64,14 +64,21 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
     setLoading(true);
 
     try {
-      await createGrievance(
-        title,
-        description,
-        category,
-        userEmail,
-        isAnonymous,
-        visibility
-      );
+      const res = await fetch('/api/grievance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          authorEmail: userEmail,
+          isAnonymous,
+          visibility,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to create grievance');
 
       setSuccess(true);
       setTitle('');

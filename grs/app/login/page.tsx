@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Moon, Sun, Building2, AlertCircle, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getUserByEmail, createUser } from '@/lib/supabase/db';
+
 
 declare global {
   interface Window {
@@ -77,14 +77,23 @@ const LoginPage = () => {
         localStorage.setItem('userEmail', userData.email);
         localStorage.setItem('authToken', credential);
 
-        // Fetch or create user in database
+        // Fetch or create user via server-side API (bypasses RLS)
         try {
-          let user = await getUserByEmail(userData.email);
-          
-          // If user doesn't exist, create them as a student
-          if (!user) {
-            user = await createUser(userData.email, userData.name, 'student');
+          const res = await fetch('/api/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userData.email, fullName: userData.name }),
+          });
+
+          const json = await res.json();
+
+          if (!res.ok || !json.user) {
+            console.error('API error fetching/creating user:', json.error);
+            router.push('/dashboard');
+            return;
           }
+
+          const user = json.user;
 
           // Redirect based on user role
           const redirectPath =

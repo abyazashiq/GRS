@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dashboard } from '@/app/components/Dashboard';
-import { getUserByEmail } from '@/lib/supabase/db';
+
 
 declare global {
   interface Window {
@@ -32,11 +32,22 @@ export default function DashboardPage() {
 
   const fetchUserRole = async (email: string) => {
     try {
-      const user = await getUserByEmail(email);
+      const res = await fetch(`/api/user?email=${encodeURIComponent(email)}`);
+      const json = await res.json();
+      const user = json.user;
       if (user) {
-        setUserRole(user.role as 'student' | 'teacher' | 'admin');
+        const role = user.role as 'student' | 'teacher' | 'admin';
+        // Redirect admin/teacher to their respective dashboards
+        if (role === 'admin') {
+          router.replace('/admin/dashboard');
+          return;
+        } else if (role === 'teacher') {
+          router.replace('/teacher/dashboard');
+          return;
+        }
+        setUserRole(role);
       } else {
-        setUserRole('student'); // Default to student
+        setUserRole('student');
       }
     } catch (err) {
       console.error('Failed to fetch user role:', err);

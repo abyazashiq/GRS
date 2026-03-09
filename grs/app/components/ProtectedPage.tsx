@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRole, isAdmin, isTeacher } from '@/lib/roleUtils';
-import { getUserByEmail } from '@/lib/supabase/db';
 
 interface ProtectedPageProps {
   children: React.ReactNode;
@@ -31,7 +30,9 @@ export const ProtectedPage: React.FC<ProtectedPageProps> = ({
           return;
         }
 
-        const user = await getUserByEmail(userEmail);
+        const res = await fetch(`/api/user?email=${encodeURIComponent(userEmail)}`);
+        const json = await res.json();
+        const user = json.user;
 
         if (!user) {
           router.push('/login');
