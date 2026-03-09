@@ -8,14 +8,27 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      router.push('/dashboard');
-    } else {
+    const email = localStorage.getItem('userEmail');
+    if (!email) {
       router.push('/login');
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    fetch(`/api/user?email=${encodeURIComponent(email)}`)
+      .then((res) => res.json())
+      .then((json) => {
+        const role = json.user?.role;
+        if (role === 'admin') {
+          router.push('/admin/dashboard');
+        } else if (role === 'teacher') {
+          router.push('/teacher/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      })
+      .catch(() => router.push('/dashboard'))
+      .finally(() => setLoading(false));
   }, [router]);
 
   if (loading) {

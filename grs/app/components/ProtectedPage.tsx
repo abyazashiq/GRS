@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserRole, isAdmin, isTeacher } from '@/lib/roleUtils';
+import { UserRole, getDefaultRedirectPath } from '@/lib/roleUtils';
 
 interface ProtectedPageProps {
   children: React.ReactNode;
@@ -41,22 +41,17 @@ export const ProtectedPage: React.FC<ProtectedPageProps> = ({
 
         setUserRole(user.role as UserRole);
 
-        // Check if user has required role
-        const hasRequiredRole =
-          requiredRole === 'student' ||
-          (requiredRole === 'teacher' && isTeacher(user.role)) ||
-          (requiredRole === 'admin' && isAdmin(user.role));
-
-        if (!hasRequiredRole) {
+        // Strict role check — each dashboard is only for its own role
+        if (user.role !== requiredRole) {
           console.warn(`Access denied: User has ${user.role} but needs ${requiredRole}`);
-          router.push(fallbackPath);
+          router.push(getDefaultRedirectPath(user.role as UserRole));
           return;
         }
 
         setHasAccess(true);
       } catch (error) {
         console.error('Error checking access:', error);
-        router.push(fallbackPath);
+        router.push('/login');
       } finally {
         setLoading(false);
       }
