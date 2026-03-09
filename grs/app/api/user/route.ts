@@ -68,19 +68,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: existing });
     }
 
-    // Create new user as student
-    const { data: created, error: createError } = await supabase
-      .from('users')
-      .insert({ email, full_name: fullName || null, role: 'student' })
-      .select('id, email, role, full_name')
-      .single();
+    // User not found — only admin-registered users may log in
+    return NextResponse.json(
+      { error: 'not_registered', message: 'You are not registered in the system. Please contact an administrator.' },
+      { status: 403 }
+    );
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
-    if (createError) {
-      console.error('Error creating user:', createError);
-      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+// Students can update their own profile picture, bio, and phone.
+// Name, email, roll number and other admin-set fields are NOT updatable here.
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email, profilePicture, bio, phone } = body;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    return NextResponse.json({ user: created });
+    const supabase = getAdminClient();
+
+    // Build update object — only student-editable fields allowed
+    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (profilePicture !== undefined) updateData.profile_picture = profilePicture;
+    if (bio !== undefined) updateData.bio = bio;
+    if (phone !== undefined) updateData.phone = phone;
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('email', email)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    }
+
+    return NextResponse.json({ user: data });
   } catch (err) {
     console.error('Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

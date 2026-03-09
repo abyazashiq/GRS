@@ -87,9 +87,19 @@ const LoginPage = () => {
 
           const json = await res.json();
 
-          if (!res.ok || !json.user) {
-            console.error('API error fetching/creating user:', json.error);
-            router.push('/dashboard');
+          if (!res.ok) {
+            if (json.error === 'not_registered') {
+              setError('You are not registered in the system. Please contact an administrator to get access.');
+            } else {
+              setError('Sign-in failed. Please try again.');
+            }
+            setIsLoading(false);
+            return;
+          }
+
+          if (!json.user) {
+            setError('Sign-in failed. Please try again.');
+            setIsLoading(false);
             return;
           }
 

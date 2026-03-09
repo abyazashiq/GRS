@@ -301,6 +301,12 @@ export default function AdminDashboardPage() {
               Section Class Advisors
             </Link>
             <Link
+              href="/admin/students"
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+            >
+              Manage Students
+            </Link>
+            <Link
               href="/dashboard"
               className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors"
             >

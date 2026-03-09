@@ -104,9 +104,103 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: data });
     }
 
+    // ── Add a student (whitelist) ─────────────────────────────────────────────
+    if (action === 'addStudent') {
+      const { email, fullName, rollNumber, age, year, section, batch, department, phone } = body;
+      if (!email || !fullName) {
+        return NextResponse.json({ error: 'email and fullName are required' }, { status: 400 });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          email: (email as string).trim().toLowerCase(),
+          full_name: fullName,
+          role: 'student',
+          roll_number: rollNumber || null,
+          age: age ? Number(age) : null,
+          year: year || null,
+          section: section || null,
+          batch: batch || null,
+          department: department || null,
+          phone: phone || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+        }
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ user: data });
+    }
+
+    // ── Remove a student ──────────────────────────────────────────────────────
+    if (action === 'removeStudent') {
+      const { studentEmail } = body;
+      if (!studentEmail) {
+        return NextResponse.json({ error: 'studentEmail required' }, { status: 400 });
+      }
+
+      // Guard: only delete role=student rows, never admins or teachers
+      const { data: target } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', studentEmail)
+        .single();
+
+      if (!target || target.role !== 'student') {
+        return NextResponse.json({ error: 'User not found or is not a student' }, { status: 404 });
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('email', studentEmail)
+        .eq('role', 'student');
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true });
+    }
+
+    // ── Update admin-controlled fields of a student ───────────────────────────
+    if (action === 'updateStudentAdminFields') {
+      const { studentEmail, fullName, rollNumber, age, year, section, batch, department } = body;
+      if (!studentEmail) {
+        return NextResponse.json({ error: 'studentEmail required' }, { status: 400 });
+      }
+
+      const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (fullName !== undefined) updateData.full_name = fullName;
+      if (rollNumber !== undefined) updateData.roll_number = rollNumber;
+      if (age !== undefined) updateData.age = age ? Number(age) : null;
+      if (year !== undefined) updateData.year = year;
+      if (section !== undefined) updateData.section = section;
+      if (batch !== undefined) updateData.batch = batch;
+      if (department !== undefined) updateData.department = department;
+
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('email', studentEmail)
+        .eq('role', 'student')
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ user: data });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (err: any) {
-    if (err.message === 'Forbidden') {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'Forbidden') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     console.error('Admin API error:', err);
