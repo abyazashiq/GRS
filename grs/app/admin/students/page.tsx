@@ -11,6 +11,8 @@ import {
   GraduationCap,
   UserPlus,
   Search,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
@@ -42,6 +44,16 @@ const EMPTY_FORM = {
   phone: '',
 };
 
+const EMPTY_EDIT_FORM = {
+  fullName: '',
+  rollNumber: '',
+  age: '',
+  year: '',
+  section: '',
+  batch: '',
+  department: '',
+};
+
 export default function AdminStudentsPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -52,6 +64,9 @@ export default function AdminStudentsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
+  const [saving, setSaving] = useState(false);
 
   const router = useRouter();
 
@@ -124,6 +139,64 @@ export default function AdminStudentsPage() {
       console.error(err);
     } finally {
       setAdding(false);
+    }
+  };
+
+  const openEdit = (student: Student) => {
+    setEditingStudent(student);
+    setEditForm({
+      fullName: student.full_name || '',
+      rollNumber: student.roll_number || '',
+      age: student.age != null ? String(student.age) : '',
+      year: student.year || '',
+      section: student.section || '',
+      batch: student.batch || '',
+      department: student.department || '',
+    });
+    setError('');
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    setError('');
+    setSuccess('');
+    setSaving(true);
+
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateStudentAdminFields',
+          callerEmail: userEmail,
+          studentEmail: editingStudent.email,
+          fullName: editForm.fullName.trim() || null,
+          rollNumber: editForm.rollNumber.trim() || null,
+          age: editForm.age || null,
+          year: editForm.year || null,
+          section: editForm.section.trim() || null,
+          batch: editForm.batch.trim() || null,
+          department: editForm.department.trim() || null,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || 'Failed to update student');
+        return;
+      }
+
+      setSuccess(`"${editForm.fullName || editingStudent.email}" updated successfully.`);
+      setEditingStudent(null);
+      setEditForm(EMPTY_EDIT_FORM);
+      await fetchStudents();
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err) {
+      setError('Failed to update student');
+      console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -445,7 +518,7 @@ export default function AdminStudentsPage() {
                       <th className="py-3 px-3 font-semibold text-gray-600">Section</th>
                       <th className="py-3 px-3 font-semibold text-gray-600">Batch</th>
                       <th className="py-3 px-3 font-semibold text-gray-600 text-center">
-                        Remove
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -473,13 +546,22 @@ export default function AdminStudentsPage() {
                         </td>
                         <td className="py-3 px-3 text-gray-600">{student.batch || '—'}</td>
                         <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => handleRemove(student)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title={`Remove ${student.full_name || student.email}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => openEdit(student)}
+                              className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title={`Edit ${student.full_name || student.email}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRemove(student)}
+                              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title={`Remove ${student.full_name || student.email}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -490,6 +572,136 @@ export default function AdminStudentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-blue-600" />
+                  Edit Student
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">{editingStudent.email}</p>
+              </div>
+              <button
+                onClick={() => { setEditingStudent(null); setEditForm(EMPTY_EDIT_FORM); setError(''); }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="px-6 py-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={editForm.fullName}
+                    onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. Rahul Sharma"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                  <input
+                    type="text"
+                    value={editForm.rollNumber}
+                    onChange={(e) => setEditForm({ ...editForm, rollNumber: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. 2021IT001"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                  <input
+                    type="text"
+                    value={editForm.department}
+                    onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. Information Technology"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <select
+                    value={editForm.year}
+                    onChange={(e) => setEditForm({ ...editForm, year: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                  >
+                    <option value="">Select year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                  <input
+                    type="text"
+                    value={editForm.section}
+                    onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. A"
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch</label>
+                  <input
+                    type="text"
+                    value={editForm.batch}
+                    onChange={(e) => setEditForm({ ...editForm, batch: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. 2021-2025"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                  <input
+                    type="number"
+                    value={editForm.age}
+                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    placeholder="e.g. 19"
+                    min={15}
+                    max={35}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-5 pt-4 border-t">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditingStudent(null); setEditForm(EMPTY_EDIT_FORM); setError(''); }}
+                  className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </ProtectedPage>
   );
 }
