@@ -74,6 +74,7 @@ const LoginPage = () => {
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userEmail', userData.email);
+        localStorage.setItem('userName', userData.name || 'User');
         localStorage.setItem('authToken', credential);
 
         // Fetch or create user via server-side API (bypasses RLS)

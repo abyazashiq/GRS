@@ -202,7 +202,7 @@ export default function AdminCategoriesPage() {
               </div>
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 bg-white text-[#13017f] rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={adding}
               >
                 <Plus size={20} />
@@ -265,7 +265,7 @@ export default function AdminCategoriesPage() {
                             </select>
                             <button
                               onClick={() => handleAssignTeacher(cat.name)}
-                              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              className="px-3 py-1.5 text-sm bg-white text-[#13017f] rounded-lg hover:shadow-lg transition"
                             >
                               Save
                             </button>

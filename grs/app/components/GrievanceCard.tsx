@@ -92,13 +92,9 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
               e.preventDefault();
               onUpvote();
             }}
-            className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium transition-colors ${
-              hasUpvoted
-                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+            className="flex items-center gap-1 px-3 py-1 rounded text-sm font-medium bg-white text-[#13017f] hover:shadow-lg transition"
           >
-            <ThumbsUp size={16} fill={hasUpvoted ? 'currentColor' : 'none'} />
+            <ThumbsUp size={16} fill="currentColor" />
             <span>{upvoteCount}</span>
           </button>
 

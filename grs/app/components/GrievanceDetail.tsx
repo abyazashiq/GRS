@@ -185,13 +185,9 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
                 <button
                   onClick={handleUpvote}
                   disabled={upvotingLoading}
-                  className={`font-medium flex items-center gap-2 px-3 py-1 rounded transition-colors ${
-                    hasUpvoted
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
+                  className="font-medium flex items-center gap-2 px-3 py-1 rounded bg-white text-[#13017f] hover:shadow-lg transition"
                 >
-                  <ThumbsUp size={16} fill={hasUpvoted ? 'currentColor' : 'none'} />
+                  <ThumbsUp size={16} fill="currentColor" />
                   {upvotes.length}
                 </button>
               </div>

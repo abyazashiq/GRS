@@ -124,7 +124,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white text-[#13017f] rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!userEmail || submitting}
           >
             {submitting ? 'Posting...' : 'Post Comment'}

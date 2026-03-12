@@ -32,6 +32,7 @@ interface TeacherStats {
 
 export default function AdminDashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   
   // Categories data
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
@@ -48,7 +49,9 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
+    const storedName = localStorage.getItem('userName');
     setUserEmail(storedEmail);
+    setUserName(storedName);
 
     if (!storedEmail) {
       router.push('/login');
@@ -135,7 +138,7 @@ export default function AdminDashboardPage() {
                 Admin
               </span>
             </div>
-            <p className="text-gray-600 mt-2">{userEmail}</p>
+            <p className="text-gray-600 mt-2">{userName || 'Administrator'}</p>
           </div>
         </div>
 

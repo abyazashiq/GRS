@@ -14,12 +14,15 @@ declare global {
 
 export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
+    const storedName = localStorage.getItem('userName');
     if (storedEmail) {
       setUserEmail(storedEmail);
+      setUserName(storedName);
     } else {
       router.push('/login');
     }
@@ -28,6 +31,7 @@ export default function DashboardPage() {
   const handleLogout = () => {
     const email = localStorage.getItem('userEmail') || '';
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
 
     if (window.google) {
       window.google.accounts.id.revoke(email, () => {
@@ -38,13 +42,13 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  if (!userEmail) {
+  if (!userEmail || !userName) {
     return null;
   }
 
   return (
     <ProtectedPage requiredRole="student">
-      <Dashboard userEmail={userEmail} userRole="student" onLogout={handleLogout} />
+      <Dashboard userEmail={userEmail} userName={userName} userRole="student" onLogout={handleLogout} />
     </ProtectedPage>
   );
 }

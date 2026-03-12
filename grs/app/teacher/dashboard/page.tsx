@@ -33,6 +33,7 @@ interface Assignment {
 
 export default function TeacherDashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -50,7 +51,9 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
+    const storedName = localStorage.getItem('userName');
     setUserEmail(storedEmail);
+    setUserName(storedName);
 
     if (!storedEmail) {
       router.push('/login');
@@ -188,7 +191,7 @@ export default function TeacherDashboardPage() {
                 Teacher
               </span>
             </div>
-            <p className="text-gray-600 mt-2">{userEmail}</p>
+            <p className="text-gray-600 mt-2">{userName || 'Teacher'}</p>
           </div>
         </div>
 
@@ -287,14 +290,14 @@ export default function TeacherDashboardPage() {
                                   {grievance.status !== 'in-progress' && (
                                     <button
                                       onClick={() => handleUpdateStatus(grievance.id, 'in-progress')}
-                                      className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm font-medium"
+                                      className="px-4 py-2 bg-white text-[#13017f] rounded font-medium hover:shadow-lg transition text-sm"
                                     >
                                       Mark In Progress
                                     </button>
                                   )}
                                   <button
                                     onClick={() => handleUpdateStatus(grievance.id, 'resolved')}
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
+                                    className="px-4 py-2 bg-white text-[#13017f] rounded font-medium hover:shadow-lg transition text-sm"
                                   >
                                     Mark Resolved
                                   </button>
@@ -332,7 +335,7 @@ export default function TeacherDashboardPage() {
                               <button
                                 onClick={() => handleSendResponse(grievance.id)}
                                 disabled={sendingResponse || !responseText.trim()}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
+                                className="px-4 py-2 bg-white text-[#13017f] rounded font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Send className="w-4 h-4" />
                                 Send Response
