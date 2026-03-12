@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
+    // Validate domain
+    if (!email.endsWith('@ssn.edu.in')) {
+      return NextResponse.json(
+        { error: 'invalid_domain', message: 'Only @ssn.edu.in email addresses are allowed.' },
+        { status: 403 }
+      );
+    }
+
     const supabase = getAdminClient();
 
     // Try to get existing user first
@@ -68,11 +76,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: existing });
     }
 
-    // User not found — only admin-registered users may log in
-    return NextResponse.json(
-      { error: 'not_registered', message: 'You are not registered in the system. Please contact an administrator.' },
-      { status: 403 }
-    );
+    // Auto-create user with role 'student' for valid domain
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert([
+        {
+          email,
+          full_name: fullName || '',
+          role: 'student',
+        },
+      ])
+      .select('id, email, role, full_name')
+      .single();
+
+    if (createError) {
+      console.error('Error creating user:', createError);
+      return NextResponse.json({ error: 'Failed to create user account' }, { status: 500 });
+    }
+
+    return NextResponse.json({ user: newUser });
   } catch (err) {
     console.error('Unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

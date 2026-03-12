@@ -69,9 +69,8 @@ const LoginPage = () => {
 
       const userData = JSON.parse(jsonPayload);
 
-      // Check if email is from @ssn.edu.in domain (TEMPORARILY DISABLED - allowing all emails)
-      // if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
-      if (userData.email) {
+      // Check if email is from @ssn.edu.in domain (REQUIRED for login)
+      if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userEmail', userData.email);
@@ -88,11 +87,7 @@ const LoginPage = () => {
           const json = await res.json();
 
           if (!res.ok) {
-            if (json.error === 'not_registered') {
-              setError('You are not registered in the system. Please contact an administrator to get access.');
-            } else {
-              setError('Sign-in failed. Please try again.');
-            }
+            setError(json.message || 'Sign-in failed. Please try again.');
             setIsLoading(false);
             return;
           }
@@ -120,7 +115,7 @@ const LoginPage = () => {
           router.push('/dashboard');
         }
       } else {
-        setError('Sign-in failed. Please try again.');
+        setError('Please sign in with a valid @ssn.edu.in email address.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -214,14 +209,14 @@ const LoginPage = () => {
             {/* Info Box */}
             <div className={`mt-6 p-4 rounded-lg border ${
               isDark 
-                ? 'bg-green-900/20 border-green-800 text-green-300' 
-                : 'bg-green-50 border-green-200 text-green-700'
+                ? 'bg-blue-900/20 border-blue-800 text-blue-300' 
+                : 'bg-blue-50 border-blue-200 text-blue-700'
             }`}>
               <p className="text-sm font-medium mb-1">
-                ✅ Any Email Accepted (Temporary)
+                🔒 @ssn.edu.in Email Required
               </p>
               <p className="text-xs opacity-90">
-                All email addresses are now accepted. Sign in with any Google account.
+                Sign in with your SSN college email account. Accounts are automatically created on first login.
               </p>
             </div>
 
