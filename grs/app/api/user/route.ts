@@ -50,13 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Validate domain
-    if (!email.endsWith('@ssn.edu.in')) {
-      return NextResponse.json(
-        { error: 'invalid_domain', message: 'Only @ssn.edu.in email addresses are allowed.' },
-        { status: 403 }
-      );
-    }
+    
 
     const supabase = getAdminClient();
 

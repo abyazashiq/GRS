@@ -70,7 +70,7 @@ const LoginPage = () => {
       const userData = JSON.parse(jsonPayload);
 
       // Check if email is from @ssn.edu.in domain (REQUIRED for login)
-      if (userData.email && userData.email.endsWith('@ssn.edu.in')) {
+      if (userData.email) {
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userEmail', userData.email);
@@ -116,7 +116,7 @@ const LoginPage = () => {
           router.push('/dashboard');
         }
       } else {
-        setError('Please sign in with a valid @ssn.edu.in email address.');
+        setError('Please sign in with a valid  email address.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -214,7 +214,7 @@ const LoginPage = () => {
                 : 'bg-blue-50 border-blue-200 text-blue-700'
             }`}>
               <p className="text-sm font-medium mb-1">
-                🔒 @ssn.edu.in Email Required
+                ____________________________________
               </p>
               <p className="text-xs opacity-90">
                 Sign in with your SSN college email account. Accounts are automatically created on first login.
