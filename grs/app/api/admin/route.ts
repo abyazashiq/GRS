@@ -49,6 +49,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ category: data });
     }
 
+    // ── Upsert escalation policy for a category ─────────────────────────────
+    if (action === 'setEscalationPolicy') {
+      const {
+        categoryName,
+        warningAfterHours,
+        escalateAfterHours,
+        criticalAfterHours,
+        inactivityAfterHours,
+        escalationPath,
+        autoEscalate,
+      } = body;
+
+      if (!categoryName) {
+        return NextResponse.json({ error: 'categoryName required' }, { status: 400 });
+      }
+
+      const warning = Number(warningAfterHours);
+      const escalate = Number(escalateAfterHours);
+      const critical = Number(criticalAfterHours);
+      const inactivity = Number(inactivityAfterHours);
+
+      if ([warning, escalate, critical, inactivity].some((n) => !Number.isFinite(n) || n <= 0)) {
+        return NextResponse.json({ error: 'Escalation times must be positive numbers' }, { status: 400 });
+      }
+
+      if (!(warning <= escalate && escalate <= critical)) {
+        return NextResponse.json(
+          { error: 'Expected warning <= escalate <= critical' },
+          { status: 400 }
+        );
+      }
+
+      const sanitizedPath = Array.isArray(escalationPath)
+        ? escalationPath
+            .map((s: unknown) => (typeof s === 'string' ? s.trim().toLowerCase() : ''))
+            .filter(Boolean)
+        : ['teacher', 'admin'];
+
+      const { data, error } = await supabase
+        .from('escalation_policies')
+        .upsert(
+          {
+            category: categoryName,
+            warning_after_hours: warning,
+            escalate_after_hours: escalate,
+            critical_after_hours: critical,
+            inactivity_after_hours: inactivity,
+            escalation_path: sanitizedPath.length > 0 ? sanitizedPath : ['teacher', 'admin'],
+            auto_escalate: autoEscalate !== false,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'category' }
+        )
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ policy: data });
+    }
+
     // ── Upsert a section advisor ──────────────────────────────────────────────
     if (action === 'setSectionAdvisor') {
       const { year, section, teacherEmail } = body;

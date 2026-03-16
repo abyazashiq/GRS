@@ -17,6 +17,7 @@ CREATE TABLE categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   description TEXT,
+  assigned_teacher_email TEXT REFERENCES users(email) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -78,6 +79,37 @@ CREATE TABLE teacher_responses (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Escalation policy table (admin-configurable per category)
+CREATE TABLE escalation_policies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category TEXT NOT NULL UNIQUE REFERENCES categories(name) ON DELETE CASCADE,
+  warning_after_hours INTEGER NOT NULL DEFAULT 24 CHECK (warning_after_hours > 0),
+  escalate_after_hours INTEGER NOT NULL DEFAULT 48 CHECK (escalate_after_hours > 0),
+  critical_after_hours INTEGER NOT NULL DEFAULT 72 CHECK (critical_after_hours > 0),
+  inactivity_after_hours INTEGER NOT NULL DEFAULT 24 CHECK (inactivity_after_hours > 0),
+  escalation_path TEXT[] NOT NULL DEFAULT ARRAY['teacher', 'admin'],
+  auto_escalate BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  CHECK (warning_after_hours <= escalate_after_hours),
+  CHECK (escalate_after_hours <= critical_after_hours)
+);
+
+-- Escalation history for auditability and notifications
+CREATE TABLE grievance_escalations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  grievance_id UUID NOT NULL REFERENCES grievances(id) ON DELETE CASCADE,
+  policy_id UUID REFERENCES escalation_policies(id) ON DELETE SET NULL,
+  from_level INTEGER NOT NULL DEFAULT 0,
+  to_level INTEGER NOT NULL,
+  escalated_to_role TEXT,
+  urgency_score NUMERIC(10,2) NOT NULL DEFAULT 0,
+  reason TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  CHECK (to_level >= 1 AND to_level <= 3),
+  CHECK (from_level >= 0 AND from_level < to_level)
+);
+
 -- Indexes for better query performance
 CREATE INDEX idx_grievances_category ON grievances(category);
 CREATE INDEX idx_grievances_status ON grievances(status);
@@ -90,6 +122,8 @@ CREATE INDEX idx_responses_grievance ON teacher_responses(grievance_id);
 CREATE INDEX idx_responses_teacher ON teacher_responses(teacher_email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_escalation_policies_category ON escalation_policies(category);
+CREATE INDEX idx_escalations_grievance_created ON grievance_escalations(grievance_id, created_at DESC);
 
 -- Insert default categories
 INSERT INTO categories (name, description) VALUES
@@ -101,6 +135,11 @@ INSERT INTO categories (name, description) VALUES
   ('Facilities', 'Campus facilities/infrastructure'),
   ('Other', 'Other grievances');
 
+-- Seed default escalation policies for existing categories
+INSERT INTO escalation_policies (category)
+SELECT name FROM categories
+ON CONFLICT (category) DO NOTHING;
+
 -- Enable Row Level Security (optional but recommended for security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grievances ENABLE ROW LEVEL SECURITY;
@@ -109,6 +148,8 @@ ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grievance_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teacher_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE escalation_policies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE grievance_escalations ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy for users table (everyone can see user info)
 CREATE POLICY "Allow public read users" 
@@ -156,4 +197,12 @@ CREATE POLICY "Allow authenticated insert comments"
 
 CREATE POLICY "Allow public read categories" 
   ON categories FOR SELECT 
+  USING (true);
+
+CREATE POLICY "Allow public read escalation policies"
+  ON escalation_policies FOR SELECT
+  USING (true);
+
+CREATE POLICY "Allow public read grievance escalations"
+  ON grievance_escalations FOR SELECT
   USING (true);

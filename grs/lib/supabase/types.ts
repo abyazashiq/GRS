@@ -21,6 +21,31 @@ export interface Category {
   created_at: string;
 }
 
+export interface EscalationPolicy {
+  id: string;
+  category: string;
+  warning_after_hours: number;
+  escalate_after_hours: number;
+  critical_after_hours: number;
+  inactivity_after_hours: number;
+  escalation_path: string[];
+  auto_escalate: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GrievanceEscalation {
+  id: string;
+  grievance_id: string;
+  policy_id: string | null;
+  from_level: number;
+  to_level: number;
+  escalated_to_role: string | null;
+  urgency_score: number;
+  reason: string | null;
+  created_at: string;
+}
+
 export interface SectionAdvisor {
   id: string;
   year: string;

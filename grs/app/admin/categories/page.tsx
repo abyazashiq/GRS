@@ -5,7 +5,16 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, AlertCircle, UserCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
-import { getCategories, deleteCategory, getAllUsers } from '@/lib/supabase/db';
+import { getCategories, deleteCategory, getAllUsers, getEscalationPolicies } from '@/lib/supabase/db';
+
+interface EscalationDraft {
+  warningAfterHours: number;
+  escalateAfterHours: number;
+  criticalAfterHours: number;
+  inactivityAfterHours: number;
+  escalationPathText: string;
+  autoEscalate: boolean;
+}
 
 export default function AdminCategoriesPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -17,6 +26,8 @@ export default function AdminCategoriesPage() {
   const [newCategoryDesc, setNewCategoryDesc] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [savingPolicyCategory, setSavingPolicyCategory] = useState<string | null>(null);
+  const [policyDrafts, setPolicyDrafts] = useState<Record<string, EscalationDraft>>({});
 
   // Teacher assignment state
   const [assigningCategory, setAssigningCategory] = useState<string | null>(null);
@@ -35,13 +46,14 @@ export default function AdminCategoriesPage() {
 
     fetchCategories();
     fetchTeachers();
+    fetchEscalationPolicyDrafts();
   }, [router]);
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
       const data = await getCategories();
-      setCategories(data as any);
+      setCategories(data as Array<{ id: string; name: string; description: string | null; assigned_teacher_email: string | null }>);
     } catch (err) {
       setError('Failed to fetch categories');
       console.error(err);
@@ -53,10 +65,58 @@ export default function AdminCategoriesPage() {
   const fetchTeachers = async () => {
     try {
       const data = await getAllUsers('teacher');
-      setTeachers((data || []) as any);
+      setTeachers((data || []) as Array<{ email: string; full_name: string | null }>);
     } catch (err) {
       console.error('Failed to fetch teachers:', err);
     }
+  };
+
+  const fetchEscalationPolicyDrafts = async () => {
+    try {
+      const data = await getEscalationPolicies();
+      const drafts: Record<string, EscalationDraft> = {};
+
+      data.forEach((policy) => {
+        drafts[policy.category] = {
+          warningAfterHours: policy.warning_after_hours,
+          escalateAfterHours: policy.escalate_after_hours,
+          criticalAfterHours: policy.critical_after_hours,
+          inactivityAfterHours: policy.inactivity_after_hours,
+          escalationPathText: (policy.escalation_path || ['teacher', 'admin']).join(', '),
+          autoEscalate: policy.auto_escalate,
+        };
+      });
+
+      setPolicyDrafts((prev) => ({ ...prev, ...drafts }));
+    } catch (err) {
+      console.error('Failed to fetch escalation policies:', err);
+    }
+  };
+
+  const getPolicyDraft = (categoryName: string): EscalationDraft => {
+    return (
+      policyDrafts[categoryName] || {
+        warningAfterHours: 24,
+        escalateAfterHours: 48,
+        criticalAfterHours: 72,
+        inactivityAfterHours: 24,
+        escalationPathText: 'teacher, admin',
+        autoEscalate: true,
+      }
+    );
+  };
+
+  const updatePolicyDraft = (
+    categoryName: string,
+    updates: Partial<EscalationDraft>
+  ) => {
+    setPolicyDrafts((prev) => ({
+      ...prev,
+      [categoryName]: {
+        ...getPolicyDraft(categoryName),
+        ...updates,
+      },
+    }));
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -132,6 +192,62 @@ export default function AdminCategoriesPage() {
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to assign teacher');
+    }
+  };
+
+  const handleSaveEscalationPolicy = async (categoryName: string) => {
+    if (!userEmail) return;
+
+    const draft = getPolicyDraft(categoryName);
+    const escalationPath = draft.escalationPathText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (
+      !(draft.warningAfterHours > 0) ||
+      !(draft.escalateAfterHours > 0) ||
+      !(draft.criticalAfterHours > 0) ||
+      !(draft.inactivityAfterHours > 0)
+    ) {
+      setError('Escalation hours must be positive numbers');
+      return;
+    }
+
+    if (!(draft.warningAfterHours <= draft.escalateAfterHours && draft.escalateAfterHours <= draft.criticalAfterHours)) {
+      setError('Invalid escalation flow: warning <= escalate <= critical');
+      return;
+    }
+
+    setSavingPolicyCategory(categoryName);
+    setError('');
+
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'setEscalationPolicy',
+          callerEmail: userEmail,
+          categoryName,
+          warningAfterHours: draft.warningAfterHours,
+          escalateAfterHours: draft.escalateAfterHours,
+          criticalAfterHours: draft.criticalAfterHours,
+          inactivityAfterHours: draft.inactivityAfterHours,
+          escalationPath,
+          autoEscalate: draft.autoEscalate,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to save escalation policy');
+
+      setSuccess(`Escalation policy updated for "${categoryName}"`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save escalation policy');
+    } finally {
+      setSavingPolicyCategory(null);
     }
   };
 
@@ -277,6 +393,77 @@ export default function AdminCategoriesPage() {
                             </button>
                           </div>
                         )}
+
+                        {/* Escalation configuration */}
+                        {(() => {
+                          const draft = getPolicyDraft(cat.name);
+                          return (
+                            <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white/70 dark:bg-gray-900/40">
+                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Escalation TTL and Path
+                              </p>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={draft.warningAfterHours}
+                                  onChange={(e) => updatePolicyDraft(cat.name, { warningAfterHours: Number(e.target.value) })}
+                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Warning (h)"
+                                />
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={draft.escalateAfterHours}
+                                  onChange={(e) => updatePolicyDraft(cat.name, { escalateAfterHours: Number(e.target.value) })}
+                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Escalate (h)"
+                                />
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={draft.criticalAfterHours}
+                                  onChange={(e) => updatePolicyDraft(cat.name, { criticalAfterHours: Number(e.target.value) })}
+                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Critical (h)"
+                                />
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={draft.inactivityAfterHours}
+                                  onChange={(e) => updatePolicyDraft(cat.name, { inactivityAfterHours: Number(e.target.value) })}
+                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Inactivity (h)"
+                                />
+                              </div>
+
+                              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                <input
+                                  type="text"
+                                  value={draft.escalationPathText}
+                                  onChange={(e) => updatePolicyDraft(cat.name, { escalationPathText: e.target.value })}
+                                  className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Escalation path (e.g. teacher, hod, admin)"
+                                />
+                                <label className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.autoEscalate}
+                                    onChange={(e) => updatePolicyDraft(cat.name, { autoEscalate: e.target.checked })}
+                                  />
+                                  Auto
+                                </label>
+                                <button
+                                  onClick={() => handleSaveEscalationPolicy(cat.name)}
+                                  className="px-3 py-1.5 text-xs bg-white text-[#13017f] rounded-lg hover:shadow-lg transition disabled:opacity-50"
+                                  disabled={savingPolicyCategory === cat.name}
+                                >
+                                  {savingPolicyCategory === cat.name ? 'Saving...' : 'Save Escalation'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">

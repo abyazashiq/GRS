@@ -1,5 +1,12 @@
 import { supabase } from './client';
-import { Grievance, Comment, Category, Upvote, SectionAdvisor } from './types';
+import {
+  Comment,
+  Category,
+  Upvote,
+  SectionAdvisor,
+  EscalationPolicy,
+  GrievanceEscalation,
+} from './types';
 
 // ============ GRIEVANCES ============
 
@@ -49,7 +56,7 @@ export async function getGrievances(
   }
 
   // Filter based on visibility and user role
-  return (data || []).filter((grievance: any) => {
+  return (data || []).filter((grievance: { author_email: string | null; visibility: 'private' | 'public' }) => {
     // Admins and teachers can see all grievances
     if (userRole === 'admin' || userRole === 'teacher') {
       return true;
@@ -266,6 +273,40 @@ export async function deleteCategory(id: string) {
   if (error) throw error;
 }
 
+// ============ ESCALATION POLICIES ============
+
+export async function getEscalationPolicies() {
+  const { data, error } = await supabase
+    .from('escalation_policies')
+    .select('*')
+    .order('category', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as EscalationPolicy[];
+}
+
+export async function getEscalationPolicyForCategory(categoryName: string) {
+  const { data, error } = await supabase
+    .from('escalation_policies')
+    .select('*')
+    .eq('category', categoryName)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return (data || null) as EscalationPolicy | null;
+}
+
+export async function getGrievanceEscalationHistory(grievanceId: string) {
+  const { data, error } = await supabase
+    .from('grievance_escalations')
+    .select('*')
+    .eq('grievance_id', grievanceId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as GrievanceEscalation[];
+}
+
 // ============ USERS ============
 
 export async function getUserByEmail(email: string) {
@@ -354,7 +395,7 @@ export async function getTeacherAssignments(teacherEmail: string) {
 
   // Fetch grievances separately to avoid Supabase foreign key issues
   if (data && data.length > 0) {
-    const grievanceIds = data.map((a: any) => a.grievance_id);
+    const grievanceIds = data.map((a: { grievance_id: string }) => a.grievance_id);
     const { data: grievances, error: grievError } = await supabase
       .from('grievances')
       .select('*')
@@ -363,9 +404,9 @@ export async function getTeacherAssignments(teacherEmail: string) {
     if (grievError) throw grievError;
 
     // Map grievances back to assignments
-    return data.map((a: any) => ({
+    return data.map((a: { grievance_id: string }) => ({
       ...a,
-      grievance: grievances?.find((g: any) => g.id === a.grievance_id),
+      grievance: grievances?.find((g: { id: string }) => g.id === a.grievance_id),
     }));
   }
 
@@ -429,7 +470,7 @@ export async function getGrirvanceStatistics() {
     resolved: 0,
   };
 
-  data?.forEach((g: any) => {
+  data?.forEach((g: { status: 'open' | 'in-progress' | 'resolved' }) => {
     byStatus[g.status as keyof typeof byStatus]++;
   });
 
