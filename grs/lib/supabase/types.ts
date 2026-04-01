@@ -24,12 +24,26 @@ export interface Category {
 export interface EscalationPolicy {
   id: string;
   category: string;
+  category_priority: number;
   warning_after_hours: number;
   escalate_after_hours: number;
   critical_after_hours: number;
   inactivity_after_hours: number;
   escalation_path: string[];
   auto_escalate: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationSettings {
+  id: string;
+  singleton_key: string;
+  daily_digest_hour_utc: number;
+  professor_digest_enabled: boolean;
+  hod_digest_enabled: boolean;
+  hod_email: string | null;
+  last_professor_digest_date: string | null;
+  last_hod_digest_date: string | null;
   created_at: string;
   updated_at: string;
 }

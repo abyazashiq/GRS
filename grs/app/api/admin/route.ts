@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     if (action === 'setEscalationPolicy') {
       const {
         categoryName,
+        categoryPriority,
         warningAfterHours,
         escalateAfterHours,
         criticalAfterHours,
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
       const escalate = Number(escalateAfterHours);
       const critical = Number(criticalAfterHours);
       const inactivity = Number(inactivityAfterHours);
+      const priority = Number(categoryPriority ?? 3);
 
       if ([warning, escalate, critical, inactivity].some((n) => !Number.isFinite(n) || n <= 0)) {
         return NextResponse.json({ error: 'Escalation times must be positive numbers' }, { status: 400 });
@@ -77,6 +79,13 @@ export async function POST(request: NextRequest) {
       if (!(warning <= escalate && escalate <= critical)) {
         return NextResponse.json(
           { error: 'Expected warning <= escalate <= critical' },
+          { status: 400 }
+        );
+      }
+
+      if (!Number.isFinite(priority) || priority < 1 || priority > 5) {
+        return NextResponse.json(
+          { error: 'categoryPriority must be between 1 (highest) and 5 (lowest)' },
           { status: 400 }
         );
       }
@@ -92,6 +101,7 @@ export async function POST(request: NextRequest) {
         .upsert(
           {
             category: categoryName,
+            category_priority: priority,
             warning_after_hours: warning,
             escalate_after_hours: escalate,
             critical_after_hours: critical,
@@ -107,6 +117,48 @@ export async function POST(request: NextRequest) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ policy: data });
+    }
+
+    // ── Update daily reminder / analytics email settings ─────────────────────
+    if (action === 'setNotificationSettings') {
+      const {
+        dailyDigestHourUtc,
+        professorDigestEnabled,
+        hodDigestEnabled,
+        hodEmail,
+      } = body;
+
+      const digestHour = Number(dailyDigestHourUtc);
+      if (!Number.isFinite(digestHour) || digestHour < 0 || digestHour > 23) {
+        return NextResponse.json(
+          { error: 'dailyDigestHourUtc must be an integer between 0 and 23' },
+          { status: 400 }
+        );
+      }
+
+      const normalizedHodEmail = typeof hodEmail === 'string' ? hodEmail.trim().toLowerCase() : '';
+      if (normalizedHodEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedHodEmail)) {
+        return NextResponse.json({ error: 'Invalid HOD email format' }, { status: 400 });
+      }
+
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .upsert(
+          {
+            singleton_key: 'default',
+            daily_digest_hour_utc: Math.trunc(digestHour),
+            professor_digest_enabled: professorDigestEnabled !== false,
+            hod_digest_enabled: hodDigestEnabled !== false,
+            hod_email: normalizedHodEmail || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'singleton_key' }
+        )
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ settings: data });
     }
 
     // ── Upsert a section advisor ──────────────────────────────────────────────

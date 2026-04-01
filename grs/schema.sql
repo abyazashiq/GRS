@@ -83,6 +83,7 @@ CREATE TABLE teacher_responses (
 CREATE TABLE escalation_policies (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category TEXT NOT NULL UNIQUE REFERENCES categories(name) ON DELETE CASCADE,
+  category_priority INTEGER NOT NULL DEFAULT 3 CHECK (category_priority >= 1 AND category_priority <= 5),
   warning_after_hours INTEGER NOT NULL DEFAULT 24 CHECK (warning_after_hours > 0),
   escalate_after_hours INTEGER NOT NULL DEFAULT 48 CHECK (escalate_after_hours > 0),
   critical_after_hours INTEGER NOT NULL DEFAULT 72 CHECK (critical_after_hours > 0),
@@ -110,6 +111,20 @@ CREATE TABLE grievance_escalations (
   CHECK (from_level >= 0 AND from_level < to_level)
 );
 
+-- Notification settings (single row) for daily reminders and analytics digests
+CREATE TABLE notification_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  singleton_key TEXT NOT NULL UNIQUE DEFAULT 'default',
+  daily_digest_hour_utc INTEGER NOT NULL DEFAULT 4 CHECK (daily_digest_hour_utc >= 0 AND daily_digest_hour_utc <= 23),
+  professor_digest_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  hod_digest_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  hod_email TEXT,
+  last_professor_digest_date DATE,
+  last_hod_digest_date DATE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes for better query performance
 CREATE INDEX idx_grievances_category ON grievances(category);
 CREATE INDEX idx_grievances_status ON grievances(status);
@@ -124,6 +139,7 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_escalation_policies_category ON escalation_policies(category);
 CREATE INDEX idx_escalations_grievance_created ON grievance_escalations(grievance_id, created_at DESC);
+CREATE INDEX idx_escalation_policies_priority ON escalation_policies(category_priority);
 
 -- Insert default categories
 INSERT INTO categories (name, description) VALUES
@@ -140,6 +156,10 @@ INSERT INTO escalation_policies (category)
 SELECT name FROM categories
 ON CONFLICT (category) DO NOTHING;
 
+INSERT INTO notification_settings (singleton_key, hod_email)
+VALUES ('default', NULL)
+ON CONFLICT (singleton_key) DO NOTHING;
+
 -- Enable Row Level Security (optional but recommended for security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grievances ENABLE ROW LEVEL SECURITY;
@@ -150,6 +170,7 @@ ALTER TABLE grievance_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE teacher_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE escalation_policies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grievance_escalations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy for users table (everyone can see user info)
 CREATE POLICY "Allow public read users" 
@@ -205,4 +226,8 @@ CREATE POLICY "Allow public read escalation policies"
 
 CREATE POLICY "Allow public read grievance escalations"
   ON grievance_escalations FOR SELECT
+  USING (true);
+
+CREATE POLICY "Allow public read notification settings"
+  ON notification_settings FOR SELECT
   USING (true);

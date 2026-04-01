@@ -6,6 +6,7 @@ import {
   SectionAdvisor,
   EscalationPolicy,
   GrievanceEscalation,
+  NotificationSettings,
 } from './types';
 
 // ============ GRIEVANCES ============
@@ -294,6 +295,17 @@ export async function getEscalationPolicyForCategory(categoryName: string) {
 
   if (error && error.code !== 'PGRST116') throw error;
   return (data || null) as EscalationPolicy | null;
+}
+
+export async function getNotificationSettings() {
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .select('*')
+    .eq('singleton_key', 'default')
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return (data || null) as NotificationSettings | null;
 }
 
 export async function getGrievanceEscalationHistory(grievanceId: string) {
