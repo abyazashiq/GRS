@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Moon, Sun, Building2, AlertCircle, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Moon, Sun, Building2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 
@@ -12,13 +12,79 @@ declare global {
 }
 
 const LoginPage = () => {
-  const [isDark, setIsDark] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
+  const handleGoogleCallback = useCallback(async (response: any) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const credential = response.credential;
+      const base64Url = credential.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+
+      const userData = JSON.parse(jsonPayload);
+
+      if (userData.email) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userEmail', userData.email);
+        localStorage.setItem('userName', userData.name || 'User');
+        localStorage.setItem('authToken', credential);
+
+        try {
+          const res = await fetch('/api/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userData.email, fullName: userData.name }),
+          });
+
+          const json = await res.json();
+
+          if (!res.ok) {
+            setError(json.message || 'Identity verification failed. Please contact administration.');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!json.user) {
+            setError('Account initialization failed. Please retry.');
+            setIsLoading(false);
+            return;
+          }
+
+          const user = json.user;
+
+          const redirectPath =
+            user.role === 'admin'
+              ? '/admin/dashboard'
+              : user.role === 'teacher'
+                ? '/teacher/dashboard'
+                : '/dashboard';
+
+          router.push(redirectPath);
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+          router.push('/dashboard');
+        }
+      } else {
+        setError('Valid institutional credentials required for access.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError('Secure authentication failed. Please try again.');
+      setIsLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
-    // Load Google Sign-In Script
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -32,13 +98,13 @@ const LoginPage = () => {
           callback: handleGoogleCallback,
         });
         
-        // Render the Google button
         window.google.accounts.id.renderButton(
           document.getElementById('google-signin-button'),
           { 
             theme: 'outline', 
             size: 'large',
             width: '100%',
+            shape: 'pill'
           }
         );
       }
@@ -49,230 +115,105 @@ const LoginPage = () => {
         document.body.removeChild(script);
       }
     };
-  }, []);
-
-  const handleGoogleCallback = async (response: any) => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Decode the JWT token to get user info
-      const credential = response.credential;
-      const base64Url = credential.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-
-      const userData = JSON.parse(jsonPayload);
-
-      // Check if email is from @ssn.edu.in domain (REQUIRED for login)
-      if (userData.email) {
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userEmail', userData.email);
-        localStorage.setItem('userName', userData.name || 'User');
-        localStorage.setItem('authToken', credential);
-
-        // Fetch or create user via server-side API (bypasses RLS)
-        try {
-          const res = await fetch('/api/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: userData.email, fullName: userData.name }),
-          });
-
-          const json = await res.json();
-
-          if (!res.ok) {
-            setError(json.message || 'Sign-in failed. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!json.user) {
-            setError('Sign-in failed. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-
-          const user = json.user;
-
-          // Redirect based on user role
-          const redirectPath =
-            user.role === 'admin'
-              ? '/admin/dashboard'
-              : user.role === 'teacher'
-                ? '/teacher/dashboard'
-                : '/dashboard';
-
-          router.push(redirectPath);
-        } catch (dbError) {
-          console.error('Database error:', dbError);
-          // Fallback to student dashboard if database fails
-          router.push('/dashboard');
-        }
-      } else {
-        setError('Please sign in with a valid  email address.');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setError('Sign-in failed. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    setIsLoading(true);
-  };
+  }, [handleGoogleCallback]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-blue-100'
-    }`}>
-      {/* Theme Toggle */}
-      <button
-        onClick={() => setIsDark(!isDark)}
-        className={`fixed top-6 right-6 p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-10 ${
-          isDark ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-white text-blue-600 hover:bg-blue-50'
-        }`}
-        aria-label="Toggle theme"
-      >
-        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-      </button>
+    <div className="min-h-screen bg-[#F0F4FF] selection:bg-[#BFDBFE] selection:text-[#1E3A8A] font-sans overflow-hidden relative">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#2563EB]/5 rounded-full blur-[100px]" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#1E3A8A]/5 rounded-full blur-[100px]" />
 
-      {/* Main Container */}
-      <div className="flex items-center justify-center min-h-screen px-4 py-12">
-        <div className="w-full max-w-md">
-          {/* Header */}
-          <div className="text-center mb-8 animate-fade-in">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-lg ${
-              isDark ? 'bg-gradient-to-br from-blue-900 to-blue-800 text-blue-300' : 'bg-gradient-to-br from-blue-600 to-blue-500 text-white'
-            }`}>
-              <Building2 className="w-10 h-10" />
+      <div className="flex items-center justify-center min-h-screen px-6 py-12 relative z-10">
+        <div className="w-full max-w-[440px] animate-fade-in">
+          {/* Brand Identity */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-[28px] mb-8 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white shadow-[0_20px_40px_-10px_rgba(37,99,235,0.3)] transform hover:rotate-6 transition-transform">
+              <Building2 className="w-12 h-12" strokeWidth={1.5} />
             </div>
-            <h1 className={`text-3xl font-bold mb-2 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              IT Department
+            <h1 className="text-[42px] font-black text-[#0F172A] tracking-[-2px] leading-none mb-3">
+              GRS <span className="text-[#2563EB]">Portal</span>
             </h1>
-            <p className={`text-xl font-medium ${
-              isDark ? 'text-blue-400' : 'text-blue-600'
-            }`}>
+            <p className="text-[17px] font-bold text-[#1E3A8A] tracking-[-0.5px]">
               Grievance Redressal System
             </p>
-            <p className={`mt-2 text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              SSN College of Engineering
-            </p>
+            <div className="mt-4 flex flex-col items-center gap-1">
+              <span className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[2px]">SSN Institute level</span>
+              <div className="h-1 w-12 bg-[#2563EB] rounded-full opacity-20" />
+            </div>
           </div>
 
-          {/* Login Card */}
-          <div className={`rounded-2xl shadow-2xl p-8 transition-all duration-300 ${
-            isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-          }`}>
-            <div className="text-center mb-6">
-              <h2 className={`text-2xl font-semibold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
+          {/* Authentication Card */}
+          <div className="bg-white rounded-[32px] shadow-[0_24px_48px_-12px_rgba(15,23,42,0.12)] p-10 border border-[#DBEAFE] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#1E3A8A]" />
+            
+            <div className="text-center mb-8">
+              <h2 className="text-[24px] font-bold text-[#0F172A] mb-2 tracking-[-0.5px]">
                 Welcome Back
               </h2>
-              <p className={`text-sm ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Sign in with your SSN Institute account
+              <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
+                Secure access for students, staff, and administration via institutional credentials.
               </p>
             </div>
 
-            {/* Error Message */}
+            {/* Error Feedback */}
             {error && (
-              <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start gap-3 animate-fade-in">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="mb-8 p-4 rounded-[16px] bg-[#FEF2F2] border border-[#FEE2E2] flex items-start gap-4 animate-shake">
+                <AlertCircle className="w-5 h-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                <p className="text-[13px] text-[#DC2626] font-bold">{error}</p>
               </div>
             )}
 
-            {/* Google Sign In Button */}
-            <div 
-              id="google-signin-button" 
-              className="flex justify-center"
-              style={{ 
-                display: 'flex',
-                justifyContent: 'center',
-                width: '100%'
-              }}
-            />
-
-            {/* Info Box */}
-            <div className={`mt-6 p-4 rounded-lg border ${
-              isDark 
-                ? 'bg-blue-900/20 border-blue-800 text-blue-300' 
-                : 'bg-blue-50 border-blue-200 text-blue-700'
-            }`}>
-              <p className="text-sm font-medium mb-1">
-                ____________________________________
-              </p>
-              <p className="text-xs opacity-90">
-                Sign in with your SSN college email account. Accounts are automatically created on first login.
-              </p>
+            {/* SSO Integration */}
+            <div className="relative group/btn">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#2563EB]/20 to-[#1E3A8A]/20 rounded-full blur opacity-0 group-hover/btn:opacity-100 transition duration-500" />
+              <div className="relative">
+                <div 
+                  id="google-signin-button" 
+                  className="flex justify-center transition-transform hover:scale-[1.02]"
+                />
+              </div>
             </div>
 
-            {/* Additional Info */}
-            <div className={`mt-6 pt-6 border-t ${
-              isDark ? 'border-gray-700' : 'border-gray-200'
-            }`}>
-              <div className="flex items-start gap-3">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                  isDark ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'
-                }`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {/* Protocol Notice */}
+            <div className="mt-8 p-6 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[24px]">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-[12px] bg-white border border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shadow-sm">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className={`text-sm font-medium mb-1 ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    First time here?
+                  <h3 className="text-[14px] font-bold text-[#1E3A8A] mb-1">
+                    First-time Access
                   </h3>
-                  <p className={`text-xs ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Click the button above to sign in with your SSN Google account. Your account will be automatically created.
+                  <p className="text-[12px] text-[#64748B] font-medium leading-[1.6]">
+                    Accounts are automatically provisioned upon initial login with your <span className="font-bold text-[#0F172A]">@ssn.edu.in</span> domain.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className={`mt-8 text-center space-y-2 ${
-            isDark ? 'text-gray-500' : 'text-gray-600'
-          }`}>
-            
+          <div className="mt-12 text-center">
+            <p className="text-[12px] font-black text-[#94A3B8] uppercase tracking-[2px]">
+              © 2026 SSN IT Department
+            </p>
           </div>
         </div>
       </div>
 
       <style jsx>{`
         @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
         }
+        .animate-fade-in { animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
       `}</style>
     </div>
   );

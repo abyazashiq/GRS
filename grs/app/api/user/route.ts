@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAutoRole } from '@/lib/roleUtils';
 
 // Server-side Supabase client with service role key — bypasses RLS
 function getAdminClient() {
@@ -70,14 +71,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: existing });
     }
 
-    // Auto-create user with role 'student' for valid domain
+    // Decide initial role based on email pattern
+    const role = getAutoRole(email);
+    
+    // Auto-create user with rule-based role for valid domain
     const { data: newUser, error: createError } = await supabase
       .from('users')
       .insert([
         {
           email,
           full_name: fullName || '',
-          role: 'student',
+          role,
         },
       ])
       .select('id, email, role, full_name')

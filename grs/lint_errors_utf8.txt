@@ -1,0 +1,152 @@
+﻿
+> grs@0.1.0 lint
+> eslint
+
+
+C:\Users\asmit\GRS\GRS\grs\app\admin\dashboard\page.tsx
+   34:10  warning  'userEmail' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   72:33  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   97:38  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   99:51  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  100:50  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+C:\Users\asmit\GRS\GRS\grs\app\admin\sections\page.tsx
+  47:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\asmit\GRS\GRS\grs\app\api\grievance\route.ts
+  15:1   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  17:13  error    Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+
+C:\Users\asmit\GRS\GRS\grs\app\components\CommentsSection.tsx
+  27:6  warning  React Hook useEffect has a missing dependency: 'fetchComments'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\asmit\GRS\GRS\grs\app\components\Dashboard.tsx
+    8:10  warning  'Filters' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+   15:3   warning  'getUpvoteCount' is defined but never used                                                                    @typescript-eslint/no-unused-vars
+   66:6   warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   87:13  warning  'otherPublicGriefs' is assigned a value but never used                                                        @typescript-eslint/no-unused-vars
+  150:9   warning  'getUpvoteCountForGrievance' is assigned a value but never used                                               @typescript-eslint/no-unused-vars
+  154:9   warning  'getCommentCountForGrievance' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+  413:81  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                               react/no-unescaped-entities
+  447:84  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                               react/no-unescaped-entities
+  450:81  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                               react/no-unescaped-entities
+
+C:\Users\asmit\GRS\GRS\grs\app\components\GrievanceCard.tsx
+  30:3  warning  'authorEmail' is defined but never used  @typescript-eslint/no-unused-vars
+  35:3  warning  'hasUpvoted' is defined but never used   @typescript-eslint/no-unused-vars
+
+C:\Users\asmit\GRS\GRS\grs\app\components\GrievanceDetail.tsx
+  17:9   warning  'router' is assigned a value but never used                                                                        @typescript-eslint/no-unused-vars
+  20:46  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  22:42  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  28:6   warning  React Hook useEffect has a missing dependency: 'fetchGrievance'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\asmit\GRS\GRS\grs\app\components\ProtectedPage.tsx
+  79:52  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\asmit\GRS\GRS\grs\app\dashboard\page.tsx
+  11:13  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  24:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\asmit\GRS\GRS\grs\app\dashboard\page.tsx:24:7
+  22 |     const storedName = localStorage.getItem('userName');
+  23 |     if (storedEmail) {
+> 24 |       setUserEmail(storedEmail);
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |       setUserName(storedName);
+  26 |     } else {
+  27 |       router.push('/login');  react-hooks/set-state-in-effect
+
+C:\Users\asmit\GRS\GRS\grs\app\grievance\[id]\page.tsx
+  10:9  warning  'router' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  14:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\asmit\GRS\GRS\grs\app\grievance\[id]\page.tsx:14:5
+  12 |   useEffect(() => {
+  13 |     const storedEmail = localStorage.getItem('userEmail');
+> 14 |     setUserEmail(storedEmail);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  15 |     setIsLoading(false);
+  16 |   }, []);
+  17 |  react-hooks/set-state-in-effect
+
+C:\Users\asmit\GRS\GRS\grs\app\login\page.tsx
+    4:45  warning  'ArrowRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   10:13  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   16:10  warning  'isLoading' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   32:21  error    Error: Cannot access variable before it is declared
+
+`handleGoogleCallback` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\asmit\GRS\GRS\grs\app\login\page.tsx:32:21
+  30 |         window.google.accounts.id.initialize({
+  31 |           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+> 32 |           callback: handleGoogleCallback,
+     |                     ^^^^^^^^^^^^^^^^^^^^ `handleGoogleCallback` accessed before it is declared
+  33 |         });
+  34 |         
+  35 |         // Render the Google button
+
+C:\Users\asmit\GRS\GRS\grs\app\login\page.tsx:54:3
+   52 |   }, []);
+   53 |
+>  54 |   const handleGoogleCallback = async (response: any) => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  55 |     setIsLoading(true);
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+>  56 |     setError('');
+      ΓÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 125 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 126 |   };
+      | ^^^^^ `handleGoogleCallback` is declared here
+  127 |
+  128 |   const handleGoogleSignIn = () => {
+  129 |     setIsLoading(true);  react-hooks/immutability
+   52:6   warning  React Hook useEffect has a missing dependency: 'handleGoogleCallback'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+   54:49  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  122:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  128:9   warning  'handleGoogleSignIn' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+
+C:\Users\asmit\GRS\GRS\grs\app\page.tsx
+  14:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\asmit\GRS\GRS\grs\app\page.tsx:14:7
+  12 |     if (!email) {
+  13 |       router.push('/login');
+> 14 |       setLoading(false);
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  15 |       return;
+  16 |     }
+  17 |  react-hooks/set-state-in-effect
+
+C:\Users\asmit\GRS\GRS\grs\app\profile\page.tsx
+  47:6  warning  React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\asmit\GRS\GRS\grs\app\teacher\dashboard\page.tsx
+  46:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 42 problems (22 errors, 20 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

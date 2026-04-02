@@ -51,3 +51,28 @@ export function formatRole(role: UserRole): string {
   };
   return roleNames[role];
 }
+// Get auto-assigned role based on email pattern
+export function getAutoRole(email: string): UserRole {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. @gmail.com -> admin
+  if (normalizedEmail.endsWith('@gmail.com')) {
+    return 'admin';
+  }
+
+  // 2. SSN patterns
+  if (normalizedEmail.endsWith('@ssn.edu.in')) {
+    // Check if it has a 7-digit student number (e.g., john1234567@ssn.edu.in)
+    // Matches: [any characters] followed by [exactly 7 digits] before @
+    const studentRegex = /\d{7}@ssn\.edu\.in$/;
+    if (studentRegex.test(normalizedEmail)) {
+      return 'student';
+    }
+    
+    // All other @ssn.edu.in -> teacher
+    return 'teacher';
+  }
+
+  // Default fallback (though domain restriction should ideally happen before this)
+  return 'student';
+}

@@ -255,235 +255,286 @@ export default function AdminCategoriesPage() {
 
   return (
     <ProtectedPage requiredRole="admin">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen bg-[#F0F4FA] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
         {/* Header */}
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <ArrowLeft size={20} />
-              Back to Dashboard
+        <header className="bg-white animate-fade-in" style={{ animationDelay: '0s' }}>
+          <div className="max-w-[1240px] mx-auto px-8 pt-10 pb-[28px]">
+            <Link href="/admin/dashboard" className="inline-flex items-center text-[#2563EB] font-bold text-[13px] hover:underline mb-8 transition-all group">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              BACK TO PORTAL
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Manage Categories
-            </h1>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-5">
+                <h1 className="text-[28px] font-[800] text-[#1E3A8A] tracking-[-0.6px]">Manage Categories</h1>
+                <div className="hidden md:block h-6 w-[1px] bg-[#E2E8F0] mx-2"></div>
+                <div className="hidden md:block text-[#94A3B8] text-[11px] font-bold uppercase tracking-[1px]">
+                  System Configuration / Routing
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <main className="max-w-[1240px] mx-auto px-8 py-8 space-y-8">
           {/* Alerts */}
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
-              <AlertCircle size={18} className="flex-shrink-0" />
-              <span>{error}</span>
+            <div className="p-4 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[14px] flex items-start shadow-sm animate-fade-in">
+              <AlertCircle className="w-5 h-5 text-[#DC2626] mt-0.5 mr-3 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[#991B1B] font-bold text-sm">Action Failed</p>
+                <p className="text-[#B91C1C] text-[13px] font-medium">{error}</p>
+              </div>
+              <button onClick={() => setError('')} className="ml-auto text-[#DC2626] hover:bg-[#FEE2E2] p-1 rounded-md transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
           )}
           {success && (
-            <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded text-green-700 dark:text-green-400 text-sm">
-              {success}
+            <div className="p-4 bg-[#F0FDF4] border border-[#DCFCE7] rounded-[14px] shadow-sm animate-fade-in flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-[#166534] animate-pulse"></div>
+              <span className="text-[#15803D] text-[14px] font-semibold">{success}</span>
             </div>
           )}
 
           {/* Add Category */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Add New Category</h2>
-            <form onSubmit={handleAddCategory} className="space-y-4">
+          <div className="bg-gradient-to-br from-white to-[#F8FAFF] border border-[#E4EAF4] rounded-[24px] shadow-[0_2px_12px_rgba(30,58,138,0.04)] p-8 animate-fade-in" style={{ animationDelay: '0.06s' }}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
+                <Plus size={20} strokeWidth={2.5} />
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Category Name *
+                <h2 className="text-[17px] font-[800] text-[#1E3A8A]">Add New Category</h2>
+                <p className="text-[#94A3B8] text-[11px] font-bold uppercase tracking-[0.5px]">Define a new grievance area</p>
+              </div>
+            </div>
+            
+            <form onSubmit={handleAddCategory} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+              <div className="space-y-3">
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
+                  Category Name <span className="text-[#EF4444]">*</span>
                 </label>
                 <input
                   type="text"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g., Academic"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Infrastructure Maintenance"
+                  className="w-full px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
                   disabled={adding}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description (Optional)
+              <div className="space-y-3">
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
+                  Scope / Description
                 </label>
-                <input
-                  type="text"
-                  value={newCategoryDesc}
-                  onChange={(e) => setNewCategoryDesc(e.target.value)}
-                  placeholder="e.g., Academic-related grievances"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={adding}
-                />
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    value={newCategoryDesc}
+                    onChange={(e) => setNewCategoryDesc(e.target.value)}
+                    placeholder="Briefly define what falls under this"
+                    className="flex-1 px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
+                    disabled={adding}
+                  />
+                  <button
+                    type="submit"
+                    className="h-[58px] px-8 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white text-[15px] font-bold rounded-[12px] shadow-[0_4px_16px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                    disabled={adding}
+                  >
+                    {adding ? 'ENROLLING...' : 'ADD CATEGORY'}
+                  </button>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-white text-[#13017f] rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={adding}
-              >
-                <Plus size={20} />
-                {adding ? 'Adding...' : 'Add Category'}
-              </button>
             </form>
           </div>
 
           {/* Categories List */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Categories ({categories.length})
-            </h2>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-[14px] font-bold text-[#64748B] uppercase tracking-[1.5px]">
+                Active Routings ({categories.length})
+              </h2>
+            </div>
 
             {loading ? (
-              <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+              <div className="flex justify-center py-20">
+                <div className="w-8 h-8 border-3 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
+              </div>
             ) : categories.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No categories found.</p>
+              <div className="bg-white rounded-[24px] border border-dashed border-[#DBEAFE] p-16 text-center">
+                <p className="text-[#94A3B8] font-medium">No system categories defined yet.</p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {categories.map((cat) => (
+              <div className="grid grid-cols-1 gap-4">
+                {categories.map((cat, idx) => (
                   <div
                     key={cat.id}
-                    className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    className="bg-white border border-[#E4EAF4] rounded-[20px] shadow-[0_1px_4px_rgba(30,58,138,0.04)] hover:shadow-[0_4px_16px_rgba(30,58,138,0.06)] transition-all animate-fade-in group"
+                    style={{ animationDelay: `${0.12 + (idx * 0.05)}s` }}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 dark:text-white">{cat.name}</h3>
-                        {cat.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{cat.description}</p>
-                        )}
-                        {/* Routing badge */}
-                        <div className="mt-2">
-                          {cat.assigned_teacher_email ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full">
-                              <UserCheck size={12} />
-                              Routes to: {cat.assigned_teacher_email}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 rounded-full">
-                              General — routes to student&apos;s class advisor
-                            </span>
+                    <div className="p-7">
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <h3 className="text-[18px] font-[800] text-[#1E3A8A] tracking-[-0.3px]">{cat.name}</h3>
+                            {cat.assigned_teacher_email ? (
+                              <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F0FDF4] text-[#166534] border border-[#DCFCE7] rounded-full uppercase tracking-[0.5px]">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse"></div>
+                                Dedicated Expert
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F8FAFF] text-[#64748B] border border-[#E2E8F0] rounded-full uppercase tracking-[0.5px]">
+                                General Routing
+                              </span>
+                            )}
+                          </div>
+                          {cat.description && (
+                            <p className="text-[14px] text-[#64748B] mt-2 font-medium leading-relaxed max-w-2xl">{cat.description}</p>
                           )}
+                          
+                          <div className="mt-4 flex items-center gap-3">
+                            <span className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">PRIMARY OWNER:</span>
+                            <span className="text-[13px] font-[700] text-[#475569] bg-[#F8FAFF] px-3 py-1 rounded-md border border-[#F1F5F9]">
+                              {cat.assigned_teacher_email || "Not Assigned (Auto-Routed to Class Advisor)"}
+                            </span>
+                          </div>
+
+                          {/* Teacher assignment inline form */}
+                          {assigningCategory === cat.name && (
+                            <div className="mt-6 flex items-center gap-3 p-4 bg-[#EFF6FF] rounded-[14px] border border-[#BFDBFE] animate-fade-in">
+                              <select
+                                value={selectedTeacher}
+                                onChange={(e) => setSelectedTeacher(e.target.value)}
+                                className="flex-1 px-4 py-3 text-[14px] font-bold border border-[#DBEAFE] rounded-[10px] bg-white text-[#1E3A8A] outline-none"
+                              >
+                                <option value="">— Auto (Class Advisor) —</option>
+                                {teachers.map((t) => (
+                                  <option key={t.email} value={t.email}>
+                                    {t.full_name ? `${t.full_name} (${t.email.split('@')[0]})` : t.email}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleAssignTeacher(cat.name)}
+                                className="px-6 py-3 bg-[#2563EB] text-white rounded-[10px] text-[13px] font-bold shadow-md hover:bg-[#1D4ED8] transition-all"
+                              >
+                                SAVE
+                              </button>
+                              <button
+                                onClick={() => { setAssigningCategory(null); setSelectedTeacher(''); }}
+                                className="p-3 text-[#94A3B8] hover:text-[#DC2626] transition-colors"
+                              >
+                                <X size={20} />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Escalation configuration */}
+                          {(() => {
+                            const draft = getPolicyDraft(cat.name);
+                            return (
+                              <div className="mt-8 border border-[#E2E8F0] rounded-[16px] overflow-hidden bg-[#F8FAFF]">
+                                <div className="px-6 py-3 bg-[#F1F5F9] border-b border-[#E2E8F0] flex items-center justify-between">
+                                  <p className="text-[10px] font-[800] text-[#64748B] uppercase tracking-[1px]">
+                                    Escalation Lifecycle & Automation
+                                  </p>
+                                </div>
+                                <div className="p-6">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                                    <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Warning (h)</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        value={draft.warningAfterHours}
+                                        onChange={(e) => updatePolicyDraft(cat.name, { warningAfterHours: Number(e.target.value) })}
+                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Escalate (h)</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        value={draft.escalateAfterHours}
+                                        onChange={(e) => updatePolicyDraft(cat.name, { escalateAfterHours: Number(e.target.value) })}
+                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Critical (h)</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        value={draft.criticalAfterHours}
+                                        onChange={(e) => updatePolicyDraft(cat.name, { criticalAfterHours: Number(e.target.value) })}
+                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Inactivity (h)</span>
+                                      <input
+                                        type="number"
+                                        min={1}
+                                        value={draft.inactivityAfterHours}
+                                        onChange={(e) => updatePolicyDraft(cat.name, { inactivityAfterHours: Number(e.target.value) })}
+                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-4 pt-6 border-t border-[#E8EDF8]">
+                                    <div className="flex-1 space-y-2">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase ml-1">Escalation Path (comma separated)</span>
+                                      <input
+                                        type="text"
+                                        value={draft.escalationPathText}
+                                        onChange={(e) => updatePolicyDraft(cat.name, { escalationPathText: e.target.value })}
+                                        className="w-full px-5 py-3 text-[14px] font-bold border border-[#DDE5F7] rounded-xl bg-white text-[#1E3A8A] outline-none"
+                                        placeholder="teacher, admin, hod, principal"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-3 px-4 py-3 bg-white border border-[#DDE5F7] rounded-xl mt-6">
+                                      <input
+                                        type="checkbox"
+                                        checked={draft.autoEscalate}
+                                        className="accent-[#2563EB] w-5 h-5 cursor-pointer rounded"
+                                        onChange={(e) => updatePolicyDraft(cat.name, { autoEscalate: e.target.checked })}
+                                      />
+                                      <span className="text-[13px] font-bold text-[#475569]">AUTO-SYNC</span>
+                                    </div>
+                                    <button
+                                      onClick={() => handleSaveEscalationPolicy(cat.name)}
+                                      className="px-8 py-3 bg-[#1E3A8A] text-white text-[13px] font-[800] rounded-xl shadow-md hover:bg-[#111827] mt-6 transition-all disabled:opacity-50"
+                                      disabled={savingPolicyCategory === cat.name}
+                                    >
+                                      {savingPolicyCategory === cat.name ? 'SAVING...' : 'SYNC POLICY'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
-                        {/* Teacher assignment inline form */}
-                        {assigningCategory === cat.name && (
-                          <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <select
-                              value={selectedTeacher}
-                              onChange={(e) => setSelectedTeacher(e.target.value)}
-                              className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="">— General (class advisor) —</option>
-                              {teachers.map((t) => (
-                                <option key={t.email} value={t.email}>
-                                  {t.full_name ? `${t.full_name} (${t.email})` : t.email}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={() => handleAssignTeacher(cat.name)}
-                              className="px-3 py-1.5 text-sm bg-white text-[#13017f] rounded-lg hover:shadow-lg transition"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => { setAssigningCategory(null); setSelectedTeacher(''); }}
-                              className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Escalation configuration */}
-                        {(() => {
-                          const draft = getPolicyDraft(cat.name);
-                          return (
-                            <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white/70 dark:bg-gray-900/40">
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Escalation TTL and Path
-                              </p>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={draft.warningAfterHours}
-                                  onChange={(e) => updatePolicyDraft(cat.name, { warningAfterHours: Number(e.target.value) })}
-                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Warning (h)"
-                                />
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={draft.escalateAfterHours}
-                                  onChange={(e) => updatePolicyDraft(cat.name, { escalateAfterHours: Number(e.target.value) })}
-                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Escalate (h)"
-                                />
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={draft.criticalAfterHours}
-                                  onChange={(e) => updatePolicyDraft(cat.name, { criticalAfterHours: Number(e.target.value) })}
-                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Critical (h)"
-                                />
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={draft.inactivityAfterHours}
-                                  onChange={(e) => updatePolicyDraft(cat.name, { inactivityAfterHours: Number(e.target.value) })}
-                                  className="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Inactivity (h)"
-                                />
-                              </div>
-
-                              <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                <input
-                                  type="text"
-                                  value={draft.escalationPathText}
-                                  onChange={(e) => updatePolicyDraft(cat.name, { escalationPathText: e.target.value })}
-                                  className="flex-1 min-w-0 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  placeholder="Escalation path (e.g. teacher, hod, admin)"
-                                />
-                                <label className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.autoEscalate}
-                                    onChange={(e) => updatePolicyDraft(cat.name, { autoEscalate: e.target.checked })}
-                                  />
-                                  Auto
-                                </label>
-                                <button
-                                  onClick={() => handleSaveEscalationPolicy(cat.name)}
-                                  className="px-3 py-1.5 text-xs bg-white text-[#13017f] rounded-lg hover:shadow-lg transition disabled:opacity-50"
-                                  disabled={savingPolicyCategory === cat.name}
-                                >
-                                  {savingPolicyCategory === cat.name ? 'Saving...' : 'Save Escalation'}
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => {
-                            setAssigningCategory(cat.name);
-                            setSelectedTeacher(cat.assigned_teacher_email ?? '');
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                          title="Assign teacher"
-                        >
-                          <UserCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                          title="Delete category"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex flex-col items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setAssigningCategory(cat.name);
+                              setSelectedTeacher(cat.assigned_teacher_email ?? '');
+                            }}
+                            className="w-11 h-11 flex items-center justify-center text-[#2563EB] hover:bg-[#EFF6FF] rounded-xl transition-all border-1.5 border-transparent hover:border-[#BFDBFE]"
+                            title="Assign Expert"
+                          >
+                            <UserCheck size={22} strokeWidth={2.5} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            className="w-11 h-11 flex items-center justify-center text-[#EF4444] hover:bg-[#FEF2F2] rounded-xl transition-all border-1.5 border-transparent hover:border-[#FEE2E2]"
+                            title="Delete Category"
+                          >
+                            <Trash2 size={22} strokeWidth={2.5} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

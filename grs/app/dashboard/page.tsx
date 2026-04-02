@@ -15,16 +15,19 @@ declare global {
 export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const storedEmail = localStorage.getItem('userEmail');
-    const storedName = localStorage.getItem('userName');
-    if (storedEmail) {
-      setUserEmail(storedEmail);
-      setUserName(storedName);
-    } else {
+    setIsMounted(true);
+    const email = localStorage.getItem('userEmail');
+    const name = localStorage.getItem('userName');
+    
+    if (!email) {
       router.push('/login');
+    } else {
+      setUserEmail(email);
+      setUserName(name);
     }
   }, [router]);
 
@@ -42,8 +45,15 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  if (!userEmail || !userName) {
-    return null;
+  if (!isMounted || !userEmail || !userName) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

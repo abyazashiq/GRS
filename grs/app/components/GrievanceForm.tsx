@@ -98,57 +98,60 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            New Grievance
-          </h2>
+    <div className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-[6px] flex items-center justify-center z-[100] p-4 animate-fade-in transition-all">
+      <div className="bg-white rounded-[24px] shadow-[0_24px_48px_-12px_rgba(15,23,42,0.18)] w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#DBEAFE] animate-scale-in">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-[#F1F5F9] flex items-center justify-between px-8 py-6 z-10">
+          <div>
+            <h2 className="text-[22px] font-bold text-[#0F172A] tracking-[-0.5px]">
+              Initiate <span className="text-[#2563EB]">Grievance</span>
+            </h2>
+            <p className="text-[13px] text-[#64748B] font-medium mt-0.5">Please provide accurate details for resolution.</p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="p-2 text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9] rounded-full transition-all"
           >
-            <X size={24} />
+            <X size={22} strokeWidth={2.5} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-8 py-8 space-y-6">
           {error && (
-            <div className="flex items-gap-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
+            <div className="flex items-start gap-3 p-4 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[12px] text-[#DC2626] text-[14px] font-bold animate-shake">
               <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded text-green-700 dark:text-green-400 text-sm">
+            <div className="flex items-center gap-3 p-4 bg-[#F0FDF4] border border-[#DCFCE7] rounded-[12px] text-[#16A34A] text-[14px] font-bold animate-fade-in">
               <CheckCircle size={18} className="flex-shrink-0" />
-              <span>Grievance created successfully!</span>
+              <span>Grievance dispatched successfully!</span>
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Title *
+          <div className="space-y-2">
+            <label className="text-[13px] font-bold text-[#475569] px-1 uppercase tracking-[0.5px]">
+              Subject Narrative
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Brief title of your grievance"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Technical issue in Laboratory 4..."
+              className="w-full px-4 py-3.5 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[14px] text-[#0F172A] text-[15px] font-medium placeholder-[#94A3B8] focus:outline-none focus:ring-[4px] focus:ring-[#2563EB]/10 focus:border-[#2563EB] transition-all"
               disabled={loading || success}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category *
+          <div className="space-y-2">
+            <label className="text-[13px] font-bold text-[#475569] px-1 uppercase tracking-[0.5px]">
+              Classification Group
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3.5 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[14px] text-[#0F172A] text-[15px] font-medium focus:outline-none focus:ring-[4px] focus:ring-[#2563EB]/10 focus:border-[#2563EB] transition-all appearance-none cursor-pointer"
               disabled={loading || success}
             >
               {categories.map((cat) => (
@@ -159,103 +162,93 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description *
+          <div className="space-y-2">
+            <label className="text-[13px] font-bold text-[#475569] px-1 uppercase tracking-[0.5px]">
+              Detailed Circumstance
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detailed description of your grievance..."
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Provide context, evidence, or specific instances..."
+              rows={5}
+              className="w-full px-4 py-3.5 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[14px] text-[#0F172A] text-[15px] font-medium placeholder-[#94A3B8] focus:outline-none focus:ring-[4px] focus:ring-[#2563EB]/10 focus:border-[#2563EB] transition-all resize-none"
               disabled={loading || success}
             />
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <input
-              type="checkbox"
-              id="anonymous"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-              disabled={loading || success}
-            />
-            <label
-              htmlFor="anonymous"
-              className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-            >
-              Submit as anonymous
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Visibility
-            </label>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => setVisibility('private')}
-              >
+          <div className="p-4 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[16px] space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === 'private'}
-                  onChange={() => setVisibility('private')}
-                  className="w-4 h-4 text-blue-600"
+                  type="checkbox"
+                  id="anonymous"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="w-5 h-5 text-[#2563EB] border-[#DBEAFE] rounded-[6px] focus:ring-[#2563EB]/20 transition-all cursor-pointer"
                   disabled={loading || success}
                 />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                    Private
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Only you can see this grievance
-                  </p>
-                </div>
+                <label
+                  htmlFor="anonymous"
+                  className="text-[14px] font-bold text-[#1E3A8A] cursor-pointer"
+                >
+                  Conceal Identity
+                </label>
               </div>
+              <span className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Highly Secure</span>
+            </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                onClick={() => setVisibility('public')}
-              >
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === 'public'}
-                  onChange={() => setVisibility('public')}
-                  className="w-4 h-4 text-blue-600"
-                  disabled={loading || success}
-                />
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                    Public
-                  </label>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Everyone can see this grievance
-                  </p>
+            <div className="pt-4 border-t border-[#EFF6FF] space-y-3">
+              <label className="text-[12px] font-bold text-[#64748B] uppercase tracking-[0.5px] block mb-2">
+                Visibility Scope
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div 
+                  className={`p-3 rounded-[12px] border-2 cursor-pointer transition-all flex flex-col gap-1 ${
+                    visibility === 'private' 
+                      ? 'bg-[#EFF6FF] border-[#2563EB] shadow-sm' 
+                      : 'bg-white border-[#F1F5F9] hover:border-[#BFDBFE]'
+                  }`}
+                  onClick={() => !loading && !success && setVisibility('private')}
+                >
+                  <span className={`text-[13px] font-bold ${visibility === 'private' ? 'text-[#2563EB]' : 'text-[#64748B]'}`}>Restricted</span>
+                  <span className="text-[11px] text-[#94A3B8]">Only Admin/Self</span>
+                </div>
+
+                <div 
+                  className={`p-3 rounded-[12px] border-2 cursor-pointer transition-all flex flex-col gap-1 ${
+                    visibility === 'public' 
+                      ? 'bg-[#EFF6FF] border-[#2563EB] shadow-sm' 
+                      : 'bg-white border-[#F1F5F9] hover:border-[#BFDBFE]'
+                  }`}
+                  onClick={() => !loading && !success && setVisibility('public')}
+                >
+                  <span className={`text-[13px] font-bold ${visibility === 'public' ? 'text-[#2563EB]' : 'text-[#64748B]'}`}>Public Feed</span>
+                  <span className="text-[11px] text-[#94A3B8]">Visible to Portal</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-white text-[#13017f] rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
+              className="flex-1 px-6 py-4 bg-white border border-[#E2E8F0] text-[#64748B] rounded-[16px] font-bold text-[15px] hover:bg-[#F8FAFF] hover:text-[#0F172A] transition-all disabled:opacity-50"
               disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-white text-[#13017f] rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-[2] px-6 py-4 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white rounded-[16px] font-bold text-[15px] shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_8px_18px_rgba(37,99,235,0.3)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading || success}
             >
-              {loading ? 'Creating...' : 'Create Grievance'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Dispatching...
+                </span>
+              ) : 'Submit Grievance'}
             </button>
           </div>
         </form>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, AlertCircle, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, AlertCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
 import { getSectionAdvisors, getAllUsers } from '@/lib/supabase/db';
@@ -44,8 +44,8 @@ export default function AdminSectionsPage() {
         getSectionAdvisors(),
         getAllUsers('teacher'),
       ]);
-      setAdvisors(advisorData as any);
-      setTeachers((teacherData || []) as any);
+      setAdvisors(advisorData as SectionAdvisor[]);
+      setTeachers((teacherData || []) as Array<{ email: string; full_name: string | null }>);
     } catch (err) {
       setError('Failed to load data');
       console.error(err);
@@ -121,132 +121,170 @@ export default function AdminSectionsPage() {
 
   return (
     <ProtectedPage requiredRole="admin">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              <ArrowLeft size={20} />
-              Back to Dashboard
+      <div className="min-h-screen bg-[#F0F4FA] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
+        {/* Header */}
+        <header className="bg-white animate-fade-in" style={{ animationDelay: '0s' }}>
+          <div className="max-w-[1240px] mx-auto px-8 pt-10 pb-[28px]">
+            <Link href="/admin/dashboard" className="inline-flex items-center text-[#2563EB] font-bold text-[13px] hover:underline mb-8 transition-all group">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              BACK TO PORTAL
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Section Class Advisors
-            </h1>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-5">
+                <h1 className="text-[28px] font-[800] text-[#1E3A8A] tracking-[-0.6px]">Class Advisors</h1>
+                <div className="hidden md:block h-6 w-[1px] bg-[#E2E8F0] mx-2"></div>
+                <div className="hidden md:block text-[#94A3B8] text-[11px] font-bold uppercase tracking-[1px]">
+                  Academic Structure / Routing
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <main className="max-w-[1240px] mx-auto px-8 py-8 space-y-8">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
-              <AlertCircle size={18} className="flex-shrink-0" />
-              <span>{error}</span>
+            <div className="p-4 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[14px] flex items-start shadow-sm animate-fade-in">
+              <AlertCircle className="w-5 h-5 text-[#DC2626] mt-0.5 mr-3 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[#991B1B] font-bold text-sm">Update Failed</p>
+                <p className="text-[#B91C1C] text-[13px] font-medium">{error}</p>
+              </div>
+              <button onClick={() => setError('')} className="ml-auto text-[#DC2626] hover:bg-[#FEE2E2] p-1 rounded-md transition-colors">
+                <X className="w-5 h-5 flex-shrink-0" />
+              </button>
             </div>
           )}
           {success && (
-            <div className="p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded text-green-700 dark:text-green-400 text-sm">
-              {success}
+            <div className="p-4 bg-[#F0FDF4] border border-[#DCFCE7] rounded-[14px] shadow-sm animate-fade-in flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-[#166534] animate-pulse"></div>
+              <span className="text-[#15803D] text-[14px] font-semibold">{success}</span>
             </div>
           )}
 
           {/* Info banner */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-300">
-            <strong>How routing works:</strong> When a student files a grievance in a &quot;General&quot; category (no professor assigned),
-            it is automatically routed to their section&apos;s class advisor below. Assign the advisor per year and section.
+          <div className="p-6 bg-white border border-[#E4EAF4] border-l-[4px] border-l-[#2563EB] rounded-[16px] shadow-[0_1px_4px_rgba(30,58,138,0.04)] animate-fade-in" style={{ animationDelay: '0.06s' }}>
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] shrink-0">
+                <AlertCircle size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-[#1E3A8A]">Routing Logic</p>
+                <p className="text-[14px] text-[#64748B] mt-1 font-medium leading-relaxed">
+                  New grievances in <span className="text-[#2563EB] font-bold">General Categories</span> are automatically routed to the class advisor assigned below based on the student&apos;s academic profile.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Add / Update Form */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Set Class Advisor
-            </h2>
-            <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white border border-[#E2E8F0] rounded-[24px] shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-8 animate-fade-in" style={{ animationDelay: '0.12s' }}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
+                <Plus size={20} strokeWidth={2.5} />
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year *</label>
+                <h2 className="text-[17px] font-[800] text-[#1E3A8A]">Set Section Advisor</h2>
+                <p className="text-[#94A3B8] text-[11px] font-bold uppercase tracking-[0.5px]">Map faculty to academic groups</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-4 gap-6 items-end">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.7px] ml-1">Year *</label>
                 <input
                   type="text"
                   value={newYear}
                   onChange={(e) => setNewYear(e.target.value)}
-                  placeholder="e.g. 1, 2, 3, 4"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. 3"
+                  className="w-full h-[48px] px-4 bg-[#F8FAFF] border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-bold outline-none focus:border-[#2563EB] transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Section *</label>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.7px] ml-1">Section *</label>
                 <input
                   type="text"
                   value={newSection}
                   onChange={(e) => setNewSection(e.target.value)}
-                  placeholder="e.g. A, B, C"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. A"
+                  className="w-full h-[48px] px-4 bg-[#F8FAFF] border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-bold outline-none focus:border-[#2563EB] transition-all"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class Advisor *</label>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.7px] ml-1">Faculty Member *</label>
                 <select
                   value={newTeacher}
                   onChange={(e) => setNewTeacher(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-[48px] px-4 bg-[#F8FAFF] border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[14px] text-[#1E293B] font-[700] outline-none focus:border-[#2563EB] transition-all"
                 >
-                  <option value="">Select teacher…</option>
+                  <option value="">Select faculty…</option>
                   {teachers.map((t) => (
                     <option key={t.email} value={t.email}>
-                      {t.full_name ? `${t.full_name} (${t.email})` : t.email}
+                      {t.full_name ? `${t.full_name} (${t.email.split('@')[0]})` : t.email}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-3">
+              <div>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                  className="w-full h-[48px] px-8 bg-[#2563EB] text-white text-[14px] font-[800] rounded-[12px] shadow-[0_4px_16px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Plus size={18} />
-                  {saving ? 'Saving…' : 'Save Advisor'}
+                  <Plus size={18} strokeWidth={3} />
+                  {saving ? 'SAVING…' : 'SAVE ADVISOR'}
                 </button>
               </div>
             </form>
           </div>
 
           {/* Existing Advisors */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Users size={20} />
-              Current Advisors ({advisors.length})
-            </h2>
+          <div className="bg-white border border-[#E2E8F0] rounded-[24px] shadow-[0_2px_12px_rgba(15,23,42,0.04)] p-8 animate-fade-in" style={{ animationDelay: '0.18s' }}>
+            <div className="flex items-center justify-between mb-8 pb-4">
+              <h2 className="text-[14px] font-bold text-[#64748B] uppercase tracking-[1.5px] flex items-center gap-3">
+                Active Groupings ({advisors.length})
+              </h2>
+            </div>
 
             {loading ? (
-              <p className="text-gray-600 dark:text-gray-400">Loading…</p>
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
+              </div>
             ) : advisors.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No section advisors configured yet.</p>
+              <div className="text-center py-12 bg-[#F8FAFF] rounded-xl border border-dashed border-[#DBEAFE]">
+                <p className="text-[#94A3B8] text-sm">No section advisors configured yet.</p>
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-hidden border border-[#E8EDF8] rounded-xl bg-[#FAFBFF]">
+                <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2 pr-4 font-semibold text-gray-700 dark:text-gray-300">Year</th>
-                      <th className="text-left py-2 pr-4 font-semibold text-gray-700 dark:text-gray-300">Section</th>
-                      <th className="text-left py-2 pr-4 font-semibold text-gray-700 dark:text-gray-300">Class Advisor</th>
-                      <th className="py-2"></th>
+                    <tr className="bg-[#F3F6FD] border-b border-[#E8EDF8]">
+                      <th className="py-4 px-6 text-[11px] font-[600] text-[#94A3B8] uppercase tracking-[0.8px]">Academic Profile</th>
+                      <th className="py-4 px-6 text-[11px] font-[600] text-[#94A3B8] uppercase tracking-[0.8px]">Faculty Advisor</th>
+                      <th className="py-4 px-6 text-right"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {advisors
                       .sort((a, b) => a.year.localeCompare(b.year) || a.section.localeCompare(b.section))
                       .map((adv) => (
-                        <tr key={adv.id} className="border-b border-gray-100 dark:border-gray-800">
-                          <td className="py-2 pr-4 text-gray-900 dark:text-white">{adv.year}</td>
-                          <td className="py-2 pr-4 text-gray-900 dark:text-white">{adv.section}</td>
-                          <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{teacherLabel(adv.teacher_email)}</td>
-                          <td className="py-2">
+                        <tr key={adv.id} className="border-b border-[#F0F4FA] hover:bg-[#F3F6FD] transition-all group">
+                          <td className="py-5 px-6">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[13px] font-[800] text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1 rounded-[8px] border border-[#BFDBFE]">YEAR {adv.year}</span>
+                              <span className="text-[13px] font-[800] text-[#1E293B]">SECTION {adv.section}</span>
+                            </div>
+                          </td>
+                          <td className="py-5 px-6">
+                            <div className="text-[15px] font-[700] text-[#1E293B] group-hover:text-[#2563EB] transition-colors">{teacherLabel(adv.teacher_email).split('(')[0]}</div>
+                            <div className="text-[12px] text-[#94A3B8] font-medium">{adv.teacher_email}</div>
+                          </td>
+                          <td className="py-5 px-6 text-right">
                             <button
                               onClick={() => handleDelete(adv.year, adv.section)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                              title="Remove"
+                              className="w-10 h-10 flex items-center justify-center text-[#EF4444] bg-white border border-[#FEE2E2] hover:bg-[#FEF2F2] rounded-xl shadow-sm transition-all"
+                              title="Revoke assignment"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={16} strokeWidth={2.5} />
                             </button>
                           </td>
                         </tr>

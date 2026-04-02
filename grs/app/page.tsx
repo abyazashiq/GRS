@@ -8,10 +8,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const email = localStorage.getItem('userEmail');
+    const email = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
     if (!email) {
       router.push('/login');
-      setLoading(false);
       return;
     }
 

@@ -12,7 +12,7 @@ function getAdminClient() {
  * 1. If the category has an assigned_teacher_email → use that.
  * 2. Otherwise (general) → look up the student's section advisor.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function resolveTeacher(
   supabase: any,
   categoryName: string,

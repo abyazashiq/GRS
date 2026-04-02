@@ -75,28 +75,26 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
   };
 
   const statusColors = {
-    open: 'bg-blue-100 text-blue-800',
-    'in-progress': 'bg-yellow-100 text-yellow-800',
-    resolved: 'bg-green-100 text-green-800',
+    open: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+    'in-progress': 'bg-[#FFFBEB] text-[#D97706] border-[#FEF3C7]',
+    resolved: 'bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7]',
   };
 
   const categoryColors = {
-    Hostel: 'bg-purple-100 text-purple-800',
-    Club: 'bg-pink-100 text-pink-800',
-    Department: 'bg-indigo-100 text-indigo-800',
-    CDC: 'bg-orange-100 text-orange-800',
-    Mentor: 'bg-cyan-100 text-cyan-800',
-    Facilities: 'bg-green-100 text-green-800',
-    Other: 'bg-gray-100 text-gray-800',
+    Hostel: 'bg-[#F3E8FF] text-[#7E22CE] border-[#E9D5FF]',
+    Club: 'bg-[#FCE7F3] text-[#BE185D] border-[#FBCFE8]',
+    Department: 'bg-[#E0E7FF] text-[#4338CA] border-[#C7D2FE]',
+    CDC: 'bg-[#FFEDD5] text-[#C2410C] border-[#FED7AA]',
+    Mentor: 'bg-[#CFFAFE] text-[#0E7490] border-[#A5F3FC]',
+    Facilities: 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]',
+    Other: 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]',
   } as Record<string, string>;
-
-  const formatDate = formatLocalDateTime;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="h-96 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+      <div className="min-h-screen bg-[#F0F4FF] flex items-center justify-center p-6">
+        <div className="max-w-4xl w-full">
+          <div className="h-[500px] bg-white border border-[#DBEAFE] rounded-[32px] animate-pulse shadow-sm" />
         </div>
       </div>
     );
@@ -104,17 +102,21 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
 
   if (!grievance) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-[#F0F4FF] p-10">
+        <div className="max-w-4xl mx-auto">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white text-[#2563EB] font-bold text-[14px] rounded-full border border-[#DBEAFE] shadow-sm hover:shadow-md hover:-translate-x-1 transition-all mb-8"
           >
-            <ChevronLeft size={20} />
-            Back to Dashboard
+            <ChevronLeft size={18} strokeWidth={3} />
+            Back to Portal
           </Link>
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">Grievance not found</p>
+          <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-16 text-center shadow-sm">
+            <div className="w-16 h-16 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock size={32} />
+            </div>
+            <h2 className="text-[24px] font-bold text-[#0F172A] mb-2 tracking-[-0.5px]">Grievance Not Found</h2>
+            <p className="text-[#64748B] font-medium">The record you are seeking does not exist or has been archived.</p>
           </div>
         </div>
       </div>
@@ -122,82 +124,84 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#F0F4FF] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
+      <div className="max-w-4xl mx-auto px-6 py-12">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-8"
+          className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white text-[#2563EB] font-bold text-[14px] rounded-full border border-[#DBEAFE] shadow-sm hover:shadow-md hover:-translate-x-1 transition-all mb-10 group"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={18} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
           Back to Dashboard
         </Link>
 
-        {/* Main Grievance */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-8 mb-8">
-          <div className="mb-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              {grievance.title}
-            </h1>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span
-                className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  categoryColors[grievance.category as keyof typeof categoryColors] ||
-                  categoryColors['Other']
-                }`}
-              >
-                {grievance.category}
-              </span>
-              <span
-                className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  statusColors[grievance.status as keyof typeof statusColors]
-                }`}
-              >
-                {grievance.status.charAt(0).toUpperCase() + grievance.status.slice(1)}
-              </span>
-            </div>
-          </div>
-
-          <div className="prose dark:prose-invert max-w-none mb-6">
-            <p className="text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-              {grievance.description}
-            </p>
-          </div>
-
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Posted by</p>
-                <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <User size={16} />
-                  {grievance.is_anonymous ? 'Anonymous' : 'User'}
-                </p>
+        <div className="space-y-10 animate-fade-in">
+          {/* Main Content Card */}
+          <article className="bg-white border border-[#E2E8F0] rounded-[32px] p-10 shadow-[0_4px_32px_rgba(15,23,42,0.03)] selection:bg-[#BFDBFE]">
+            <div className="flex flex-col gap-6 mb-10">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-sm ${categoryColors[grievance.category as keyof typeof categoryColors] || categoryColors['Other']}`}>
+                  {grievance.category}
+                </span>
+                <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-sm ${statusColors[grievance.status as keyof typeof statusColors]}`}>
+                  {grievance.status.charAt(0).toUpperCase() + grievance.status.slice(1)}
+                </span>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Posted on</p>
-                <p className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <Clock size={16} />
-                  {formatDate(grievance.created_at)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Upvotes</p>
-                <button
-                  onClick={handleUpvote}
-                  disabled={upvotingLoading}
-                  className="font-medium flex items-center gap-2 px-3 py-1 rounded bg-white text-[#13017f] hover:shadow-lg transition"
-                >
-                  <ThumbsUp size={16} fill="currentColor" />
-                  {upvotes.length}
-                </button>
+              
+              <h1 className="text-[36px] font-bold text-[#0F172A] tracking-[-1.5px] leading-[1.2] mb-2">
+                {grievance.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-[#F1F5F9]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
+                    <User size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-[#94A3B8] font-bold uppercase tracking-[1px] leading-none mb-1">Author Identity</p>
+                    <p className="text-[14px] font-bold text-[#0F172A]">
+                      {grievance.is_anonymous ? 'Concealed Contributor' : (grievance.author_email?.split('@')[0] || 'Member')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#F8FAFF] flex items-center justify-center text-[#1E3A8A]">
+                    <Clock size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-[#94A3B8] font-bold uppercase tracking-[1px] leading-none mb-1">Timestamp</p>
+                    <p className="text-[14px] font-bold text-[#0F172A]">{formatLocalDateTime(grievance.created_at)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 ml-auto">
+                  <button
+                    onClick={handleUpvote}
+                    disabled={upvotingLoading}
+                    className={`flex items-center gap-3 px-6 py-3 rounded-full text-[15px] font-bold transition-all ${
+                      hasUpvoted 
+                        ? 'bg-[#2563EB] text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] scale-105' 
+                        : 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] hover:bg-[#2563EB] hover:text-white'
+                    }`}
+                  >
+                    <ThumbsUp size={18} strokeWidth={2.5} fill={hasUpvoted ? 'currentColor' : 'none'} />
+                    <span>{upvotes.length} Seconded</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Comments Section */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-8">
-          <CommentsSection grievanceId={grievanceId} userEmail={userEmail} />
+            <div className="bg-[#F8FAFF] border border-[#DBEAFE] rounded-[24px] p-8">
+              <p className="text-[17px] text-[#475569] font-medium leading-[1.7] whitespace-pre-wrap">
+                {grievance.description}
+              </p>
+            </div>
+          </article>
+
+          {/* Discussion Card */}
+          <section className="bg-white border border-[#E2E8F0] rounded-[32px] p-10 shadow-[0_4px_32px_rgba(15,23,42,0.03)]">
+            <CommentsSection grievanceId={grievanceId} userEmail={userEmail} />
+          </section>
         </div>
       </div>
     </div>

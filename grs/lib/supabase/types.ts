@@ -9,8 +9,8 @@ export interface Grievance {
   is_anonymous: boolean;
   created_at: string;
   updated_at: string;
-  upvote_count: number;
-  comment_count: number;
+  upvotes?: Array<{ count: number }>;
+  comments?: Array<{ count: number }>;
 }
 
 export interface Category {
@@ -87,4 +87,24 @@ export interface Comment {
   is_anonymous: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  role: 'student' | 'teacher' | 'admin';
+  full_name: string | null;
+  phone: string | null;
+  department: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Assignment {
+  id: string;
+  grievance_id: string;
+  teacher_email: string;
+  assigned_at: string;
+  assigned_by_email: string;
+  grievance: Grievance;
 }
