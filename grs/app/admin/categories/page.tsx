@@ -2,10 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, AlertCircle, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, AlertCircle, UserCheck, X, Edit2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
 import { getCategories, deleteCategory, getAllUsers, getEscalationPolicies } from '@/lib/supabase/db';
+
+interface EscalationStageDraft {
+  name: string;
+  email: string;
+  duration_hours: number;
+}
 
 interface EscalationDraft {
   warningAfterHours: number;
@@ -13,6 +19,7 @@ interface EscalationDraft {
   criticalAfterHours: number;
   inactivityAfterHours: number;
   escalationPathText: string;
+  stages: EscalationStageDraft[];
   autoEscalate: boolean;
 }
 
@@ -24,14 +31,20 @@ export default function AdminCategoriesPage() {
   const [adding, setAdding] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDesc, setNewCategoryDesc] = useState('');
+  const [newCategoryStages, setNewCategoryStages] = useState<EscalationStageDraft[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [savingPolicyCategory, setSavingPolicyCategory] = useState<string | null>(null);
   const [policyDrafts, setPolicyDrafts] = useState<Record<string, EscalationDraft>>({});
 
   // Teacher assignment state
   const [assigningCategory, setAssigningCategory] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState('');
+
+  // Category Edit State
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryDesc, setEditCategoryDesc] = useState('');
+  const [editCategoryStages, setEditCategoryStages] = useState<EscalationStageDraft[]>([]);
 
   const router = useRouter();
 
@@ -83,6 +96,7 @@ export default function AdminCategoriesPage() {
           criticalAfterHours: policy.critical_after_hours,
           inactivityAfterHours: policy.inactivity_after_hours,
           escalationPathText: (policy.escalation_path || ['teacher', 'admin']).join(', '),
+          stages: policy.stages || [],
           autoEscalate: policy.auto_escalate,
         };
       });
@@ -101,22 +115,10 @@ export default function AdminCategoriesPage() {
         criticalAfterHours: 72,
         inactivityAfterHours: 24,
         escalationPathText: 'teacher, admin',
+        stages: [],
         autoEscalate: true,
       }
     );
-  };
-
-  const updatePolicyDraft = (
-    categoryName: string,
-    updates: Partial<EscalationDraft>
-  ) => {
-    setPolicyDrafts((prev) => ({
-      ...prev,
-      [categoryName]: {
-        ...getPolicyDraft(categoryName),
-        ...updates,
-      },
-    }));
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -137,11 +139,43 @@ export default function AdminCategoriesPage() {
     setAdding(true);
 
     try {
-      const { addCategory } = await import('@/lib/supabase/db');
-      await addCategory(newCategoryName.trim(), newCategoryDesc.trim() || undefined);
-      setSuccess(`Category "${newCategoryName}" added successfully`);
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'addCategory',
+          callerEmail: userEmail,
+          name: newCategoryName.trim(),
+          description: newCategoryDesc.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to add category');
+
+      // Now immediately set the initial escalation policy if there are stages (or to populate defaults)
+      const policyRes = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'setEscalationPolicy',
+          callerEmail: userEmail,
+          categoryName: newCategoryName.trim(),
+          warningAfterHours: 24,
+          escalateAfterHours: 48,
+          criticalAfterHours: 72,
+          inactivityAfterHours: 24,
+          escalationPath: ['teacher', 'admin'],
+          stages: newCategoryStages,
+          autoEscalate: true,
+        }),
+      });
+      const policyJson = await policyRes.json();
+      if (!policyRes.ok) console.error('Failed to immediately set policy on category create:', policyJson);
+
+      setSuccess(`Category "${newCategoryName}" created successfully!`);
       setNewCategoryName('');
       setNewCategoryDesc('');
+      setNewCategoryStages([]);
       await fetchCategories();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -151,10 +185,70 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const handleUpdateCategory = async (id: string, oldName: string) => {
+    setError('');
+    setSuccess('');
+    if (!editCategoryName.trim()) {
+      setError('Category name is required');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateCategory',
+          callerEmail: userEmail,
+          id,
+          newName: editCategoryName.trim(),
+          description: editCategoryDesc.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update category');
+
+      await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'setEscalationPolicy',
+          callerEmail: userEmail,
+          categoryName: editCategoryName.trim(),
+          warningAfterHours: 24,
+          escalateAfterHours: 48,
+          criticalAfterHours: 72,
+          inactivityAfterHours: 24,
+          escalationPath: ['teacher', 'admin'],
+          stages: editCategoryStages,
+          autoEscalate: true,
+        }),
+      });
+
+      setSuccess(`Category updated successfully`);
+      setEditingCategoryId(null);
+      await fetchCategories();
+      await fetchEscalationPolicyDrafts();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update category');
+    }
+  };
+
   const handleDeleteCategory = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
-        await deleteCategory(id);
+        const res = await fetch('/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'deleteCategory',
+            callerEmail: userEmail,
+            id,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to delete category');
+
         setSuccess(`Category "${name}" deleted successfully`);
         await fetchCategories();
         setTimeout(() => setSuccess(''), 3000);
@@ -192,62 +286,6 @@ export default function AdminCategoriesPage() {
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to assign teacher');
-    }
-  };
-
-  const handleSaveEscalationPolicy = async (categoryName: string) => {
-    if (!userEmail) return;
-
-    const draft = getPolicyDraft(categoryName);
-    const escalationPath = draft.escalationPathText
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    if (
-      !(draft.warningAfterHours > 0) ||
-      !(draft.escalateAfterHours > 0) ||
-      !(draft.criticalAfterHours > 0) ||
-      !(draft.inactivityAfterHours > 0)
-    ) {
-      setError('Escalation hours must be positive numbers');
-      return;
-    }
-
-    if (!(draft.warningAfterHours <= draft.escalateAfterHours && draft.escalateAfterHours <= draft.criticalAfterHours)) {
-      setError('Invalid escalation flow: warning <= escalate <= critical');
-      return;
-    }
-
-    setSavingPolicyCategory(categoryName);
-    setError('');
-
-    try {
-      const res = await fetch('/api/admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'setEscalationPolicy',
-          callerEmail: userEmail,
-          categoryName,
-          warningAfterHours: draft.warningAfterHours,
-          escalateAfterHours: draft.escalateAfterHours,
-          criticalAfterHours: draft.criticalAfterHours,
-          inactivityAfterHours: draft.inactivityAfterHours,
-          escalationPath,
-          autoEscalate: draft.autoEscalate,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to save escalation policy');
-
-      setSuccess(`Escalation policy updated for "${categoryName}"`);
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save escalation policy');
-    } finally {
-      setSavingPolicyCategory(null);
     }
   };
 
@@ -308,41 +346,125 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
             
-            <form onSubmit={handleAddCategory} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-              <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
-                  Category Name <span className="text-[#EF4444]">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="e.g. Infrastructure Maintenance"
-                  className="w-full px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
-                  disabled={adding}
-                />
-              </div>
-              <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
-                  Scope / Description
-                </label>
-                <div className="flex gap-4">
+            <form onSubmit={handleAddCategory} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
+                    Category Name <span className="text-[#EF4444]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g. Infrastructure Maintenance"
+                    className="w-full px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
+                    disabled={adding}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-[0.8px] ml-1">
+                    Scope / Description
+                  </label>
                   <input
                     type="text"
                     value={newCategoryDesc}
                     onChange={(e) => setNewCategoryDesc(e.target.value)}
                     placeholder="Briefly define what falls under this"
-                    className="flex-1 px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
+                    className="w-full px-5 py-4 bg-white border-[1.5px] border-[#DDE5F7] rounded-[12px] text-[15px] text-[#1E293B] font-medium placeholder-[#94A3B8] focus:border-[#2563EB] transition-all"
                     disabled={adding}
                   />
-                  <button
-                    type="submit"
-                    className="h-[58px] px-8 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white text-[15px] font-bold rounded-[12px] shadow-[0_4px_16px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                </div>
+              </div>
+
+              {/* Add category stages */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[12px] font-[800] text-[#1E3A8A] uppercase tracking-[0.5px]">Dynamic Escalation Track (Optional)</p>
+                  <button 
+                    type="button"
+                    onClick={() => setNewCategoryStages([...newCategoryStages, { name: '', email: '', duration_hours: 24 }])}
+                    className="text-[11px] font-bold flex items-center gap-1 text-[#2563EB] bg-[#EFF6FF] px-3 py-1.5 rounded-lg hover:bg-[#DBEAFE] transition-all"
                     disabled={adding}
                   >
-                    {adding ? 'ENROLLING...' : 'ADD CATEGORY'}
+                    <Plus size={14} /> ADD STAGE
                   </button>
                 </div>
+                <div className="space-y-3">
+                  {newCategoryStages.map((stage, sIdx) => (
+                    <div key={sIdx} className="flex items-center gap-3 p-3 bg-white border border-[#DDE5F7] rounded-xl relative group">
+                      <div className="w-6 h-6 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] font-bold text-[10px] rounded-md shrink-0">
+                        {sIdx + 1}
+                      </div>
+                      <input
+                        type="text"
+                        value={stage.name}
+                        onChange={(e) => {
+                          const newStages = [...newCategoryStages];
+                          newStages[sIdx].name = e.target.value;
+                          setNewCategoryStages(newStages);
+                        }}
+                        className="flex-1 px-3 py-2 text-[13px] font-semibold border border-[#E2E8F0] rounded-lg focus:border-[#2563EB] outline-none bg-transparent"
+                        placeholder="Assignee Name (e.g. Prof 1, HOD)"
+                        disabled={adding}
+                      />
+                      <input
+                        type="email"
+                        value={stage.email}
+                        onChange={(e) => {
+                          const newStages = [...newCategoryStages];
+                          newStages[sIdx].email = e.target.value;
+                          setNewCategoryStages(newStages);
+                        }}
+                        className="flex-1 px-3 py-2 text-[13px] font-medium border border-[#E2E8F0] rounded-lg focus:border-[#2563EB] outline-none bg-transparent"
+                        placeholder="Assignee Email"
+                        disabled={adding}
+                      />
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          min={1}
+                          value={stage.duration_hours}
+                          onChange={(e) => {
+                            const newStages = [...newCategoryStages];
+                            newStages[sIdx].duration_hours = Number(e.target.value);
+                            setNewCategoryStages(newStages);
+                          }}
+                          className="w-full px-3 py-2 text-[13px] font-bold border border-[#E2E8F0] rounded-lg focus:border-[#2563EB] outline-none text-center bg-transparent"
+                          placeholder="Hours"
+                          disabled={adding}
+                        />
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const newStages = [...newCategoryStages];
+                          newStages.splice(sIdx, 1);
+                          setNewCategoryStages(newStages);
+                        }}
+                        className="text-[#94A3B8] hover:text-[#EF4444] p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove Stage"
+                        disabled={adding}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  {newCategoryStages.length === 0 && (
+                    <p className="text-[12px] text-[#94A3B8] font-medium py-4 bg-white/50 border border-dashed border-[#CBD5E1] rounded-xl text-center">
+                      No initial escalation stages specified. You can configure them later.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-[#E4EAF4]">
+                <button
+                  type="submit"
+                  className="h-[52px] px-8 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white text-[14px] font-bold rounded-[12px] shadow-[0_4px_16px_rgba(37,99,235,0.3)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 flex items-center gap-2"
+                  disabled={adding}
+                >
+                  {adding ? 'SAVING...' : 'CREATE CATEGORY'}
+                </button>
               </div>
             </form>
           </div>
@@ -374,29 +496,157 @@ export default function AdminCategoriesPage() {
                     <div className="p-7">
                       <div className="flex items-start justify-between gap-6">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <h3 className="text-[18px] font-[800] text-[#1E3A8A] tracking-[-0.3px]">{cat.name}</h3>
-                            {cat.assigned_teacher_email ? (
-                              <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F0FDF4] text-[#166534] border border-[#DCFCE7] rounded-full uppercase tracking-[0.5px]">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse"></div>
-                                Dedicated Expert
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F8FAFF] text-[#64748B] border border-[#E2E8F0] rounded-full uppercase tracking-[0.5px]">
-                                General Routing
-                              </span>
-                            )}
-                          </div>
-                          {cat.description && (
-                            <p className="text-[14px] text-[#64748B] mt-2 font-medium leading-relaxed max-w-2xl">{cat.description}</p>
+                          {editingCategoryId === cat.id ? (
+                            <div className="mb-4 space-y-4">
+                              <div className="space-y-3">
+                                <input
+                                  type="text"
+                                  value={editCategoryName}
+                                  onChange={(e) => setEditCategoryName(e.target.value)}
+                                  className="w-full px-4 py-2 text-[16px] font-[800] text-[#1E3A8A] border border-[#DDE5F7] rounded-lg focus:border-[#2563EB] outline-none"
+                                  placeholder="Category Name"
+                                />
+                                <input
+                                  type="text"
+                                  value={editCategoryDesc}
+                                  onChange={(e) => setEditCategoryDesc(e.target.value)}
+                                  className="w-full px-4 py-2 text-[14px] text-[#475569] border border-[#DDE5F7] rounded-lg focus:border-[#2563EB] outline-none"
+                                  placeholder="Scope / Description"
+                                />
+                              </div>
+                              
+                              <div className="pt-2">
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-[11px] font-[800] text-[#1E3A8A] uppercase tracking-[0.5px]">Dynamic Escalation Track</p>
+                                  <button 
+                                    type="button"
+                                    onClick={() => setEditCategoryStages([...editCategoryStages, { name: '', email: '', duration_hours: 24 }])}
+                                    className="text-[10px] font-bold flex items-center gap-1 text-[#2563EB] bg-[#EFF6FF] px-2 py-1 rounded-lg hover:bg-[#DBEAFE] transition-all"
+                                  >
+                                    <Plus size={12} /> ADD STAGE
+                                  </button>
+                                </div>
+                                <div className="space-y-2">
+                                  {editCategoryStages.map((stage, sIdx) => (
+                                    <div key={sIdx} className="flex items-center gap-2 p-2 bg-white border border-[#DDE5F7] rounded-lg relative group">
+                                      <div className="w-5 h-5 flex items-center justify-center bg-[#F1F5F9] text-[#64748B] font-bold text-[9px] rounded-sm shrink-0">
+                                        {sIdx + 1}
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={stage.name}
+                                        onChange={(e) => {
+                                          const newStages = [...editCategoryStages];
+                                          newStages[sIdx].name = e.target.value;
+                                          setEditCategoryStages(newStages);
+                                        }}
+                                        className="flex-1 px-2 py-1 text-[12px] font-semibold border border-[#E2E8F0] rounded-md focus:border-[#2563EB] outline-none bg-transparent"
+                                        placeholder="Assignee Name"
+                                      />
+                                      <input
+                                        type="email"
+                                        value={stage.email}
+                                        onChange={(e) => {
+                                          const newStages = [...editCategoryStages];
+                                          newStages[sIdx].email = e.target.value;
+                                          setEditCategoryStages(newStages);
+                                        }}
+                                        className="flex-1 px-2 py-1 text-[12px] font-medium border border-[#E2E8F0] rounded-md focus:border-[#2563EB] outline-none bg-transparent"
+                                        placeholder="Assignee Email"
+                                      />
+                                      <div className="w-16">
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          value={stage.duration_hours}
+                                          onChange={(e) => {
+                                            const newStages = [...editCategoryStages];
+                                            newStages[sIdx].duration_hours = Number(e.target.value);
+                                            setEditCategoryStages(newStages);
+                                          }}
+                                          className="w-full px-2 py-1 text-[12px] font-bold border border-[#E2E8F0] rounded-md focus:border-[#2563EB] outline-none text-center bg-transparent"
+                                          placeholder="Hours"
+                                        />
+                                      </div>
+                                      <button 
+                                        type="button"
+                                        onClick={() => {
+                                          const newStages = [...editCategoryStages];
+                                          newStages.splice(sIdx, 1);
+                                          setEditCategoryStages(newStages);
+                                        }}
+                                        className="text-[#94A3B8] hover:text-[#EF4444] p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {editCategoryStages.length === 0 && (
+                                    <p className="text-[11px] text-[#94A3B8] font-medium py-2 bg-white/50 border border-dashed border-[#CBD5E1] rounded-lg text-center">
+                                      No escalation stages. Default fallback active.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2 pt-2">
+                                <button onClick={() => handleUpdateCategory(cat.id, cat.name)} className="flex items-center gap-1 px-4 py-2 bg-[#16A34A] text-white text-[12px] font-bold rounded-lg hover:bg-[#15803D]">
+                                  <Check size={14} /> SAVE
+                                </button>
+                                <button onClick={() => setEditingCategoryId(null)} className="flex items-center gap-1 px-4 py-2 bg-[#F1F5F9] text-[#64748B] text-[12px] font-bold rounded-lg hover:bg-[#E2E8F0]">
+                                  <X size={14} /> CANCEL
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-4 flex-wrap">
+                                <h3 className="text-[18px] font-[800] text-[#1E3A8A] tracking-[-0.3px]">{cat.name}</h3>
+                                {cat.assigned_teacher_email ? (
+                                  <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F0FDF4] text-[#166534] border border-[#DCFCE7] rounded-full uppercase tracking-[0.5px]">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse"></div>
+                                    Dedicated Expert
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-2 text-[10px] font-[800] px-3 py-1 bg-[#F8FAFF] text-[#64748B] border border-[#E2E8F0] rounded-full uppercase tracking-[0.5px]">
+                                    General Routing
+                                  </span>
+                                )}
+                              </div>
+                              {cat.description && (
+                                <p className="text-[14px] text-[#64748B] mt-2 font-medium leading-relaxed max-w-2xl">{cat.description}</p>
+                              )}
+                            </>
                           )}
                           
-                          <div className="mt-4 flex items-center gap-3">
+                          {/* Display the Assignee Info */}
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
                             <span className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">PRIMARY OWNER:</span>
                             <span className="text-[13px] font-[700] text-[#475569] bg-[#F8FAFF] px-3 py-1 rounded-md border border-[#F1F5F9]">
                               {cat.assigned_teacher_email || "Not Assigned (Auto-Routed to Class Advisor)"}
                             </span>
                           </div>
+
+                          {/* Display Read-Only Stages */}
+                          {editingCategoryId !== cat.id && (
+                            <div className="mt-5">
+                              <span className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.5px] mb-2 block">Ticket Escalation Track:</span>
+                              <div className="flex flex-col gap-2">
+                                {getPolicyDraft(cat.name).stages.length > 0 ? (
+                                  getPolicyDraft(cat.name).stages.map((stage, idx) => (
+                                    <div key={idx} className="flex items-center gap-2 text-[13px] text-[#475569] bg-[#F1F5F9] px-3 py-2 rounded-lg border border-[#E2E8F0] w-max">
+                                      <span className="font-[800] text-[#1E3A8A]">Stage {idx + 1}:</span>
+                                      <span className="font-semibold">{stage.name}</span>
+                                      <span className="text-[#94A3B8]">({stage.email})</span>
+                                      <span className="ml-2 font-bold text-[#EF4444]">— escalates after {stage.duration_hours}h</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-[13px] text-[#94A3B8] italic">Using fallback escalation settings</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Teacher assignment inline form */}
                           {assigningCategory === cat.name && (
@@ -427,96 +677,22 @@ export default function AdminCategoriesPage() {
                               </button>
                             </div>
                           )}
-
-                          {/* Escalation configuration */}
-                          {(() => {
-                            const draft = getPolicyDraft(cat.name);
-                            return (
-                              <div className="mt-8 border border-[#E2E8F0] rounded-[16px] overflow-hidden bg-[#F8FAFF]">
-                                <div className="px-6 py-3 bg-[#F1F5F9] border-b border-[#E2E8F0] flex items-center justify-between">
-                                  <p className="text-[10px] font-[800] text-[#64748B] uppercase tracking-[1px]">
-                                    Escalation Lifecycle & Automation
-                                  </p>
-                                </div>
-                                <div className="p-6">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                                    <div className="space-y-2">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Warning (h)</span>
-                                      <input
-                                        type="number"
-                                        min={1}
-                                        value={draft.warningAfterHours}
-                                        onChange={(e) => updatePolicyDraft(cat.name, { warningAfterHours: Number(e.target.value) })}
-                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Escalate (h)</span>
-                                      <input
-                                        type="number"
-                                        min={1}
-                                        value={draft.escalateAfterHours}
-                                        onChange={(e) => updatePolicyDraft(cat.name, { escalateAfterHours: Number(e.target.value) })}
-                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Critical (h)</span>
-                                      <input
-                                        type="number"
-                                        min={1}
-                                        value={draft.criticalAfterHours}
-                                        onChange={(e) => updatePolicyDraft(cat.name, { criticalAfterHours: Number(e.target.value) })}
-                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Inactivity (h)</span>
-                                      <input
-                                        type="number"
-                                        min={1}
-                                        value={draft.inactivityAfterHours}
-                                        onChange={(e) => updatePolicyDraft(cat.name, { inactivityAfterHours: Number(e.target.value) })}
-                                        className="w-full px-4 py-2.5 text-[14px] font-[800] border border-[#DDE5F7] rounded-lg bg-white text-[#1E3A8A] outline-none text-center"
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-4 pt-6 border-t border-[#E8EDF8]">
-                                    <div className="flex-1 space-y-2">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] uppercase ml-1">Escalation Path (comma separated)</span>
-                                      <input
-                                        type="text"
-                                        value={draft.escalationPathText}
-                                        onChange={(e) => updatePolicyDraft(cat.name, { escalationPathText: e.target.value })}
-                                        className="w-full px-5 py-3 text-[14px] font-bold border border-[#DDE5F7] rounded-xl bg-white text-[#1E3A8A] outline-none"
-                                        placeholder="teacher, admin, hod, principal"
-                                      />
-                                    </div>
-                                    <div className="flex items-center gap-3 px-4 py-3 bg-white border border-[#DDE5F7] rounded-xl mt-6">
-                                      <input
-                                        type="checkbox"
-                                        checked={draft.autoEscalate}
-                                        className="accent-[#2563EB] w-5 h-5 cursor-pointer rounded"
-                                        onChange={(e) => updatePolicyDraft(cat.name, { autoEscalate: e.target.checked })}
-                                      />
-                                      <span className="text-[13px] font-bold text-[#475569]">AUTO-SYNC</span>
-                                    </div>
-                                    <button
-                                      onClick={() => handleSaveEscalationPolicy(cat.name)}
-                                      className="px-8 py-3 bg-[#1E3A8A] text-white text-[13px] font-[800] rounded-xl shadow-md hover:bg-[#111827] mt-6 transition-all disabled:opacity-50"
-                                      disabled={savingPolicyCategory === cat.name}
-                                    >
-                                      {savingPolicyCategory === cat.name ? 'SAVING...' : 'SYNC POLICY'}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
                         </div>
 
                         <div className="flex flex-col items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setEditingCategoryId(cat.id);
+                              setEditCategoryName(cat.name);
+                              setEditCategoryDesc(cat.description || '');
+                              const currentPolicy = getPolicyDraft(cat.name);
+                              setEditCategoryStages(currentPolicy.stages || []);
+                            }}
+                            className="w-11 h-11 flex items-center justify-center text-[#10B981] hover:bg-[#D1FAE5] rounded-xl transition-all border-1.5 border-transparent hover:border-[#A7F3D0]"
+                            title="Edit Category"
+                          >
+                            <Edit2 size={22} strokeWidth={2.5} />
+                          </button>
                           <button
                             onClick={() => {
                               setAssigningCategory(cat.name);

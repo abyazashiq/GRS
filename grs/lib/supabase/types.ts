@@ -21,6 +21,12 @@ export interface Category {
   created_at: string;
 }
 
+export interface EscalationStage {
+  name: string;
+  email: string;
+  duration_hours: number;
+}
+
 export interface EscalationPolicy {
   id: string;
   category: string;
@@ -30,6 +36,7 @@ export interface EscalationPolicy {
   critical_after_hours: number;
   inactivity_after_hours: number;
   escalation_path: string[];
+  stages: EscalationStage[] | null;
   auto_escalate: boolean;
   created_at: string;
   updated_at: string;

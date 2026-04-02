@@ -49,16 +49,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ category: data });
     }
 
+    // ── Add a category ───────────────────────────────────────
+    if (action === 'addCategory') {
+      const { name, description } = body;
+      if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 });
+
+      const { data, error } = await supabase
+        .from('categories')
+        .insert({ name, description: description || null })
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ category: data });
+    }
+
+    // ── Update a category ───────────────────────────────────────
+    if (action === 'updateCategory') {
+      const { id, newName, description } = body;
+      if (!id || !newName) return NextResponse.json({ error: 'id and newName required' }, { status: 400 });
+
+      const { data, error } = await supabase
+        .from('categories')
+        .update({ name: newName, description: description || null })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ category: data });
+    }
+
+    // ── Delete a category ───────────────────────────────────────
+    if (action === 'deleteCategory') {
+      const { id } = body;
+      if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true });
+    }
+
     // ── Upsert escalation policy for a category ─────────────────────────────
     if (action === 'setEscalationPolicy') {
       const {
         categoryName,
-        categoryPriority,
         warningAfterHours,
         escalateAfterHours,
         criticalAfterHours,
         inactivityAfterHours,
         escalationPath,
+        stages,
         autoEscalate,
       } = body;
 
@@ -66,29 +111,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'categoryName required' }, { status: 400 });
       }
 
-      const warning = Number(warningAfterHours);
-      const escalate = Number(escalateAfterHours);
-      const critical = Number(criticalAfterHours);
-      const inactivity = Number(inactivityAfterHours);
-      const priority = Number(categoryPriority ?? 3);
+      // Fetch the exact category name from DB to avoid FK case-mismatch failures
+      const { data: catRow, error: catErr } = await supabase
+        .from('categories')
+        .select('name')
+        .ilike('name', categoryName.trim())
+        .single();
 
-      if ([warning, escalate, critical, inactivity].some((n) => !Number.isFinite(n) || n <= 0)) {
-        return NextResponse.json({ error: 'Escalation times must be positive numbers' }, { status: 400 });
+      if (catErr || !catRow) {
+        return NextResponse.json({ error: `Category "${categoryName}" not found` }, { status: 404 });
       }
 
-      if (!(warning <= escalate && escalate <= critical)) {
-        return NextResponse.json(
-          { error: 'Expected warning <= escalate <= critical' },
-          { status: 400 }
-        );
-      }
+      const exactCategoryName = catRow.name;
 
-      if (!Number.isFinite(priority) || priority < 1 || priority > 5) {
-        return NextResponse.json(
-          { error: 'categoryPriority must be between 1 (highest) and 5 (lowest)' },
-          { status: 400 }
-        );
-      }
+      const warning = Number(warningAfterHours ?? 24);
+      const escalate = Number(escalateAfterHours ?? 48);
+      const critical = Number(criticalAfterHours ?? 72);
+      const inactivity = Number(inactivityAfterHours ?? 24);
 
       const sanitizedPath = Array.isArray(escalationPath)
         ? escalationPath
@@ -96,17 +135,23 @@ export async function POST(request: NextRequest) {
             .filter(Boolean)
         : ['teacher', 'admin'];
 
+      const sanitizedStages = Array.isArray(stages)
+        ? stages.filter((s: { name?: string; email?: string; duration_hours?: number }) =>
+            s && (s.name || s.email)
+          )
+        : [];
+
       const { data, error } = await supabase
         .from('escalation_policies')
         .upsert(
           {
-            category: categoryName,
-            category_priority: priority,
-            warning_after_hours: warning,
-            escalate_after_hours: escalate,
-            critical_after_hours: critical,
-            inactivity_after_hours: inactivity,
+            category: exactCategoryName,
+            warning_after_hours: warning > 0 ? warning : 24,
+            escalate_after_hours: escalate > 0 ? escalate : 48,
+            critical_after_hours: critical > 0 ? critical : 72,
+            inactivity_after_hours: inactivity > 0 ? inactivity : 24,
             escalation_path: sanitizedPath.length > 0 ? sanitizedPath : ['teacher', 'admin'],
+            stages: sanitizedStages,
             auto_escalate: autoEscalate !== false,
             updated_at: new Date().toISOString(),
           },

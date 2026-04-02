@@ -265,6 +265,18 @@ export async function addCategory(name: string, description?: string) {
   return data;
 }
 
+export async function updateCategory(id: string, newName: string, description?: string) {
+  const { data, error } = await supabase
+    .from('categories')
+    .update({ name: newName, description: description || null })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteCategory(id: string) {
   const { error } = await supabase
     .from('categories')
