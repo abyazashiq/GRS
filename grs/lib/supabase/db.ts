@@ -7,6 +7,7 @@ import {
   EscalationPolicy,
   GrievanceEscalation,
   NotificationSettings,
+  PriorityConfig,
 } from './types';
 
 // ============ GRIEVANCES ============
@@ -557,4 +558,16 @@ export async function resolveGrievanceTeacher(
 
   const advisor = await getSectionAdvisorForStudent(authorEmail);
   return advisor?.teacher_email ?? null;
+}
+
+// ============ PRIORITY CONFIGURATIONS ============
+
+export async function getPriorityConfigs() {
+  const { data, error } = await supabase
+    .from('priority_configs')
+    .select('*')
+    .order('priority', { ascending: false }); // Sorts loosely Urgent -> Low if we care, but let's just sort
+
+  if (error) throw error;
+  return data as PriorityConfig[];
 }

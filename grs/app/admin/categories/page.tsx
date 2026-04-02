@@ -13,6 +13,14 @@ interface EscalationStageDraft {
   duration_hours: number;
 }
 
+interface PriorityConfigDraft {
+  priority: 'Urgent' | 'High' | 'Medium' | 'Low';
+  warning_hours: number;
+  escalate_hours: number;
+  critical_hours: number;
+  inactivity_hours: number;
+}
+
 interface EscalationDraft {
   warningAfterHours: number;
   escalateAfterHours: number;
@@ -35,6 +43,8 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [policyDrafts, setPolicyDrafts] = useState<Record<string, EscalationDraft>>({});
+  const [priorityConfigs, setPriorityConfigs] = useState<PriorityConfigDraft[]>([]);
+  const [updatingPriority, setUpdatingPriority] = useState(false);
 
   // Teacher assignment state
   const [assigningCategory, setAssigningCategory] = useState<string | null>(null);
@@ -60,6 +70,7 @@ export default function AdminCategoriesPage() {
     fetchCategories();
     fetchTeachers();
     fetchEscalationPolicyDrafts();
+    fetchPriorityConfigs();
   }, [router]);
 
   const fetchCategories = async () => {
@@ -119,6 +130,48 @@ export default function AdminCategoriesPage() {
         autoEscalate: true,
       }
     );
+  };
+
+  const fetchPriorityConfigs = async () => {
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getPriorityConfigs', callerEmail: userEmail }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setPriorityConfigs(json.configs || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch priority configs:', err);
+    }
+  };
+
+  const handleUpdatePriorityConfigs = async () => {
+    setError('');
+    setSuccess('');
+    setUpdatingPriority(true);
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updatePriorityConfigs',
+          callerEmail: userEmail,
+          configs: priorityConfigs,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update priority policies');
+
+      setSuccess('Priority SLA thresholds updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update priority policies');
+    } finally {
+      setUpdatingPriority(false);
+    }
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -467,6 +520,111 @@ export default function AdminCategoriesPage() {
                 </button>
               </div>
             </form>
+          </div>
+
+          {/* Priority SLA Studio */}
+          <div className="bg-white border border-[#E4EAF4] rounded-[24px] shadow-[0_2px_12px_rgba(30,58,138,0.04)] p-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F5F3FF] flex items-center justify-center text-[#7C3AED]">
+                  <AlertCircle size={20} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h2 className="text-[17px] font-[800] text-[#1E3A8A]">Priority SLA Studio</h2>
+                  <p className="text-[#94A3B8] text-[11px] font-bold uppercase tracking-[0.5px]">Configure global timing thresholds</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleUpdatePriorityConfigs}
+                disabled={updatingPriority || priorityConfigs.length === 0}
+                className="px-6 py-2.5 bg-[#1E3A8A] text-white text-[12px] font-bold rounded-xl hover:bg-[#2563EB] transition-all disabled:opacity-50 shadow-sm"
+              >
+                {updatingPriority ? 'SAVING...' : 'SAVE PRIORITY POLICIES'}
+              </button>
+            </div>
+
+            <div className="overflow-hidden border border-[#E2E8F0] rounded-2xl bg-[#F8FAFF]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F1F5F9] border-b border-[#E2E8F0]">
+                    <th className="py-4 px-6 text-[10px] font-bold text-[#64748B] uppercase tracking-[1px]">Priority Tier</th>
+                    <th className="py-4 px-6 text-[10px] font-bold text-[#64748B] uppercase tracking-[1px] text-center">Warning (Hrs)</th>
+                    <th className="py-4 px-6 text-[10px] font-bold text-[#64748B] uppercase tracking-[1px] text-center">Escalate (Hrs)</th>
+                    <th className="py-4 px-6 text-[10px] font-bold text-[#64748B] uppercase tracking-[1px] text-center">Critical (Hrs)</th>
+                    <th className="py-4 px-6 text-[10px] font-bold text-[#64748B] uppercase tracking-[1px] text-center">Inactivity (Hrs)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E2E8F0]">
+                  {priorityConfigs.map((config, idx) => (
+                    <tr key={config.priority} className="bg-white hover:bg-[#F1F5F9]/30 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full ${
+                            config.priority === 'Urgent' ? 'bg-[#EF4444]' :
+                            config.priority === 'High' ? 'bg-[#F59E0B]' :
+                            config.priority === 'Medium' ? 'bg-[#3B82F6]' : 'bg-[#94A3B8]'
+                          }`}></div>
+                          <span className="text-[14px] font-bold text-[#1E3A8A]">{config.priority}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <input
+                          type="number"
+                          value={config.warning_hours}
+                          onChange={(e) => {
+                            const newConfigs = [...priorityConfigs];
+                            newConfigs[idx].warning_hours = Number(e.target.value);
+                            setPriorityConfigs(newConfigs);
+                          }}
+                          className="w-20 mx-auto block px-3 py-1.5 text-[13px] font-bold text-center border border-[#CBD5E1] rounded-lg focus:border-[#2563EB] outline-none"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <input
+                          type="number"
+                          value={config.escalate_hours}
+                          onChange={(e) => {
+                            const newConfigs = [...priorityConfigs];
+                            newConfigs[idx].escalate_hours = Number(e.target.value);
+                            setPriorityConfigs(newConfigs);
+                          }}
+                          className="w-20 mx-auto block px-3 py-1.5 text-[13px] font-bold text-center border border-[#CBD5E1] rounded-lg focus:border-[#2563EB] outline-none"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <input
+                          type="number"
+                          value={config.critical_hours}
+                          onChange={(e) => {
+                            const newConfigs = [...priorityConfigs];
+                            newConfigs[idx].critical_hours = Number(e.target.value);
+                            setPriorityConfigs(newConfigs);
+                          }}
+                          className="w-20 mx-auto block px-3 py-1.5 text-[13px] font-bold text-center border border-[#CBD5E1] rounded-lg focus:border-[#2563EB] outline-none"
+                        />
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <input
+                          type="number"
+                          value={config.inactivity_hours}
+                          onChange={(e) => {
+                            const newConfigs = [...priorityConfigs];
+                            newConfigs[idx].inactivity_hours = Number(e.target.value);
+                            setPriorityConfigs(newConfigs);
+                          }}
+                          className="w-20 mx-auto block px-3 py-1.5 text-[13px] font-bold text-center border border-[#CBD5E1] rounded-lg focus:border-[#2563EB] outline-none"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-[11px] text-[#94A3B8] font-medium italic">
+              * Thresholds define when a grievance transitions from Awareness to Warning, then Escalation, and finally Critical status. 
+              These are applied based on the Priority level selected during submission.
+            </p>
           </div>
 
           {/* Categories List */}

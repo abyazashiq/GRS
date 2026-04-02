@@ -355,6 +355,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ user: data });
     }
 
+    // ── Update priority-based SLA thresholds ─────────────────────────────────
+    if (action === 'updatePriorityConfigs') {
+      const { configs } = body;
+      if (!Array.isArray(configs)) {
+        return NextResponse.json({ error: 'configs array required' }, { status: 400 });
+      }
+
+      for (const config of configs) {
+        const { error } = await supabase
+          .from('priority_configs')
+          .upsert({
+            priority: config.priority,
+            warning_hours: Number(config.warning_hours),
+            escalate_hours: Number(config.escalate_hours),
+            critical_hours: Number(config.critical_hours),
+            inactivity_hours: Number(config.inactivity_hours),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'priority' });
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // ── Get priority-based SLA thresholds ─────────────────────────────────────
+    if (action === 'getPriorityConfigs') {
+      const { data, error } = await supabase
+        .from('priority_configs')
+        .select('*')
+        .order('priority', { ascending: false });
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ configs: data });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === 'Forbidden') {

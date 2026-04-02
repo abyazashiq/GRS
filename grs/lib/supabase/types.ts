@@ -115,3 +115,12 @@ export interface Assignment {
   assigned_by_email: string;
   grievance: Grievance;
 }
+
+export interface PriorityConfig {
+  priority: 'Urgent' | 'High' | 'Medium' | 'Low';
+  warning_hours: number;
+  escalate_hours: number;
+  critical_hours: number;
+  inactivity_hours: number;
+  updated_at: string;
+}
