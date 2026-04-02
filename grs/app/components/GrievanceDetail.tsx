@@ -2,17 +2,27 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, User, Clock, ThumbsUp } from 'lucide-react';
+import { ChevronLeft, User, Clock, ThumbsUp, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { CommentsSection } from '@/app/components/CommentsSection';
 import { getGrievanceById, addUpvote, removeUpvote, getUpvotes } from '@/lib/supabase/db';
 import { formatLocalDateTime } from '@/lib/dateUtils';
 
+type Priority = 'Urgent' | 'High' | 'Medium' | 'Low';
+
 interface GrievanceDetailProps {
   userEmail: string | null;
+  userRole?: 'student' | 'teacher' | 'admin' | null;
 }
 
-export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) => {
+const PRIORITY_CONFIG: Record<Priority, { badge: string; dot: string; label: string }> = {
+  Urgent: { badge: 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]', dot: 'bg-[#DC2626]', label: 'Urgent' },
+  High:   { badge: 'bg-[#FFFBEB] text-[#D97706] border-[#FEF3C7]', dot: 'bg-[#D97706]', label: 'High' },
+  Medium: { badge: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]', dot: 'bg-[#2563EB]', label: 'Medium' },
+  Low:    { badge: 'bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]', dot: 'bg-[#94A3B8]', label: 'Low' },
+};
+
+export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, userRole }) => {
   const params = useParams();
   const router = useRouter();
   const grievanceId = params.id as string;
@@ -22,6 +32,8 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
   const [upvotes, setUpvotes] = useState<any[]>([]);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [upvotingLoading, setUpvotingLoading] = useState(false);
+  const [priorityUpdating, setPriorityUpdating] = useState(false);
+  const [priorityMsg, setPriorityMsg] = useState('');
 
   useEffect(() => {
     fetchGrievance();
@@ -74,6 +86,28 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
     }
   };
 
+  const handlePriorityChange = async (newPriority: Priority) => {
+    if (!userEmail || !grievance) return;
+    setPriorityUpdating(true);
+    setPriorityMsg('');
+    try {
+      const res = await fetch('/api/grievance/priority', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grievanceId, priority: newPriority, callerEmail: userEmail }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update');
+      setGrievance((prev: any) => ({ ...prev, priority: newPriority }));
+      setPriorityMsg('Priority updated');
+      setTimeout(() => setPriorityMsg(''), 2000);
+    } catch (err) {
+      setPriorityMsg('Update failed');
+    } finally {
+      setPriorityUpdating(false);
+    }
+  };
+
   const statusColors = {
     open: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
     'in-progress': 'bg-[#FFFBEB] text-[#D97706] border-[#FEF3C7]',
@@ -89,6 +123,10 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
     Facilities: 'bg-[#DCFCE7] text-[#15803D] border-[#BBF7D0]',
     Other: 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]',
   } as Record<string, string>;
+
+  const canChangePriority = userRole === 'admin' || userRole === 'teacher';
+  const grievancePriority = (grievance?.priority || 'Medium') as Priority;
+  const priorityCfg = PRIORITY_CONFIG[grievancePriority] || PRIORITY_CONFIG['Medium'];
 
   if (loading) {
     return (
@@ -138,6 +176,8 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
           {/* Main Content Card */}
           <article className="bg-white border border-[#E2E8F0] rounded-[32px] p-10 shadow-[0_4px_32px_rgba(15,23,42,0.03)] selection:bg-[#BFDBFE]">
             <div className="flex flex-col gap-6 mb-10">
+
+              {/* Badges row */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-sm ${categoryColors[grievance.category as keyof typeof categoryColors] || categoryColors['Other']}`}>
                   {grievance.category}
@@ -145,8 +185,13 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
                 <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-sm ${statusColors[grievance.status as keyof typeof statusColors]}`}>
                   {grievance.status.charAt(0).toUpperCase() + grievance.status.slice(1)}
                 </span>
+                {/* Priority badge */}
+                <span className={`text-[11px] font-bold px-3 py-1 rounded-full border shadow-sm flex items-center gap-1.5 ${priorityCfg.badge}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${priorityCfg.dot}`} />
+                  {grievancePriority}
+                </span>
               </div>
-              
+
               <h1 className="text-[36px] font-bold text-[#0F172A] tracking-[-1.5px] leading-[1.2] mb-2">
                 {grievance.title}
               </h1>
@@ -179,8 +224,8 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
                     onClick={handleUpvote}
                     disabled={upvotingLoading}
                     className={`flex items-center gap-3 px-6 py-3 rounded-full text-[15px] font-bold transition-all ${
-                      hasUpvoted 
-                        ? 'bg-[#2563EB] text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] scale-105' 
+                      hasUpvoted
+                        ? 'bg-[#2563EB] text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] scale-105'
                         : 'bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] hover:bg-[#2563EB] hover:text-white'
                     }`}
                   >
@@ -189,6 +234,42 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail }) =
                   </button>
                 </div>
               </div>
+
+              {/* Priority editor — visible to teacher & admin only */}
+              {canChangePriority && (
+                <div className="mt-2 p-5 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[18px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle size={14} className="text-[#94A3B8]" />
+                    <span className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[1px]">Change Priority</span>
+                    {priorityMsg && (
+                      <span className="ml-2 text-[11px] font-bold text-[#16A34A] bg-[#F0FDF4] px-2 py-0.5 rounded-full border border-[#DCFCE7]">
+                        {priorityMsg}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {(['Urgent', 'High', 'Medium', 'Low'] as Priority[]).map((p) => {
+                      const cfg = PRIORITY_CONFIG[p];
+                      const isActive = grievancePriority === p;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => !isActive && handlePriorityChange(p)}
+                          disabled={priorityUpdating || isActive}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-[10px] border-2 text-[12px] font-bold transition-all ${
+                            isActive
+                              ? cfg.badge + ' cursor-default'
+                              : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#CBD5E1]'
+                          } disabled:opacity-60`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? cfg.dot : 'bg-[#CBD5E1]'}`} />
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-[#F8FAFF] border border-[#DBEAFE] rounded-[24px] p-8">

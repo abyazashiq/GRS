@@ -26,6 +26,7 @@ interface GrievanceData {
   description: string;
   category: string;
   status: 'open' | 'in-progress' | 'resolved';
+  priority?: 'Urgent' | 'High' | 'Medium' | 'Low';
   author_email: string | null;
   is_anonymous: boolean;
   visibility: 'private' | 'public';
@@ -402,6 +403,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           description={grievance.description}
                           category={grievance.category}
                           status={grievance.status}
+                          priority={grievance.priority}
                           isAnonymous={grievance.is_anonymous}
                           authorEmail={grievance.author_email || undefined}
                           createdAt={grievance.created_at}
@@ -445,6 +447,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           description={grievance.description}
                           category={grievance.category}
                           status={grievance.status}
+                          priority={grievance.priority}
                           isAnonymous={grievance.is_anonymous}
                           authorEmail={grievance.author_email || undefined}
                           createdAt={grievance.created_at}
@@ -482,6 +485,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           description={grievance.description}
                           category={grievance.category}
                           status={grievance.status}
+                          priority={grievance.priority}
                           isAnonymous={grievance.is_anonymous}
                           authorEmail={grievance.author_email || undefined}
                           createdAt={grievance.created_at}

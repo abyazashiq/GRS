@@ -11,6 +11,7 @@ interface GrievanceCardProps {
   description: string;
   category: string;
   status: 'open' | 'in-progress' | 'resolved';
+  priority?: 'Urgent' | 'High' | 'Medium' | 'Low';
   isAnonymous: boolean;
   authorEmail?: string;
   createdAt: string;
@@ -26,6 +27,7 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
   description,
   category,
   status,
+  priority,
   isAnonymous,
   authorEmail,
   createdAt,
@@ -50,6 +52,20 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
     Other: 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]',
   } as Record<string, string>;
 
+  const priorityColors = {
+    Urgent: 'bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2]',
+    High:   'bg-[#FFFBEB] text-[#D97706] border-[#FEF3C7]',
+    Medium: 'bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE]',
+    Low:    'bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]',
+  } as Record<string, string>;
+
+  const priorityDots = {
+    Urgent: 'bg-[#DC2626]',
+    High:   'bg-[#D97706]',
+    Medium: 'bg-[#2563EB]',
+    Low:    'bg-[#94A3B8]',
+  } as Record<string, string>;
+
   return (
     <Link href={`/grievance/${id}`} className="block group">
       <div className="bg-white border border-[#E2E8F0] rounded-[16px] p-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.1)] transition-all duration-300 group-hover:-translate-y-1">
@@ -71,6 +87,12 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${statusColors[status]}`}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
+          {priority && (
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${priorityColors[priority] || priorityColors['Medium']}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${priorityDots[priority] || priorityDots['Medium']}`} />
+              {priority}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center justify-between text-[13px] text-[#94A3B8] font-bold mb-5 pb-5 border-b border-[#F1F5F9]">

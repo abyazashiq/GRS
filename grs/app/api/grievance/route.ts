@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail, buildNewGrievanceEmail } from '@/lib/email';
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -14,6 +15,7 @@ function getAdminClient() {
  */
  
 async function resolveTeacher(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   categoryName: string,
   authorEmail: string | null
@@ -58,7 +60,7 @@ async function resolveTeacher(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, category, authorEmail, isAnonymous, visibility } = body;
+    const { title, description, category, priority, authorEmail, isAnonymous, visibility } = body;
 
     if (!title || !description || !category) {
       return NextResponse.json({ error: 'title, description, category required' }, { status: 400 });
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
         description,
         category,
         status: 'open',
+        priority: priority || 'Medium',
         author_email: isAnonymous ? null : (authorEmail ?? null),
         is_anonymous: isAnonymous ?? false,
         visibility: visibility ?? 'private',
@@ -104,6 +107,45 @@ export async function POST(request: NextRequest) {
         // Non-fatal: log but don't fail the request
         console.warn('Auto-assign failed:', aError.message);
       }
+    }
+
+    // ── Send notification email to Stage 1 of the escalation track ──────────
+    try {
+      const { data: policyRaw } = await supabase
+        .from('escalation_policies')
+        .select('stages')
+        .ilike('category', category)
+        .single();
+
+      const stages = (policyRaw?.stages ?? []) as Array<{ name: string; email: string; duration_hours: number }>;
+
+      if (stages.length > 0 && stages[0].email) {
+        const stage1 = stages[0];
+        const emailContent = buildNewGrievanceEmail({
+          stageName: stage1.name || 'Faculty',
+          grievanceTitle: title,
+          grievanceDescription: description,
+          grievanceCategory: category,
+          grievanceId: grievance.id,
+          filedAt: grievance.created_at,
+          isAnonymous: isAnonymous ?? false,
+          authorEmail: isAnonymous ? null : (authorEmail ?? null),
+        });
+
+        await sendEmail({
+          to: stage1.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text,
+        });
+
+        console.log(`Notification sent to Stage 1: ${stage1.email}`);
+      } else {
+        console.log('No escalation stages configured for category — skipping email.');
+      }
+    } catch (emailErr) {
+      // Non-fatal: grievance is already saved
+      console.error('Failed to send escalation notification email:', emailErr);
     }
 
     return NextResponse.json({ grievance, assignedTo: teacherEmail ?? null });

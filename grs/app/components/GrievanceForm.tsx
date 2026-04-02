@@ -18,6 +18,7 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [priority, setPriority] = useState<'Urgent' | 'High' | 'Medium' | 'Low'>('Medium');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [visibility, setVisibility] = useState<'private' | 'public'>('private');
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,7 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
           title,
           description,
           category,
+          priority,
           authorEmail: userEmail,
           isAnonymous,
           visibility,
@@ -83,6 +85,7 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
       setSuccess(true);
       setTitle('');
       setDescription('');
+      setPriority('Medium');
       setIsAnonymous(false);
       setVisibility('private');
 
@@ -160,6 +163,39 @@ export const GrievanceForm: React.FC<GrievanceFormProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[13px] font-bold text-[#475569] px-1 uppercase tracking-[0.5px]">
+              Priority Level
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {(['Urgent', 'High', 'Medium', 'Low'] as const).map((p) => {
+                const colors = {
+                  Urgent: { active: 'bg-[#FEF2F2] border-[#DC2626] text-[#DC2626]', dot: 'bg-[#DC2626]' },
+                  High:   { active: 'bg-[#FFFBEB] border-[#D97706] text-[#D97706]', dot: 'bg-[#D97706]' },
+                  Medium: { active: 'bg-[#EFF6FF] border-[#2563EB] text-[#2563EB]', dot: 'bg-[#2563EB]' },
+                  Low:    { active: 'bg-[#F1F5F9] border-[#64748B] text-[#64748B]', dot: 'bg-[#94A3B8]' },
+                };
+                const isActive = priority === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => !loading && !success && setPriority(p)}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-[12px] border-2 text-[12px] font-bold transition-all ${
+                      isActive
+                        ? colors[p].active
+                        : 'bg-white border-[#E2E8F0] text-[#94A3B8] hover:border-[#CBD5E1]'
+                    }`}
+                    disabled={loading || success}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${isActive ? colors[p].dot : 'bg-[#CBD5E1]'}`} />
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
