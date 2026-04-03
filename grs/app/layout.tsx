@@ -24,10 +24,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className="antialiased font-sans">
+        {/* Elite Background Physics */}
+        <div className="blob w-[500px] h-[500px] top-[-100px] right-[-100px] animate-blob-one" />
+        <div className="blob w-[600px] h-[600px] bottom-[-150px] left-[-150px] animate-blob-two opacity-60" />
+        <div className="blob w-[300px] h-[300px] top-[40%] left-[20%] animate-blob-one opacity-30" style={{ animationDelay: '5s' }} />
+        
+        {/* Main Content */}
+        <div className="relative z-10 min-h-screen">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -231,3 +231,8 @@ CREATE POLICY "Allow public read grievance escalations"
 CREATE POLICY "Allow public read notification settings"
   ON notification_settings FOR SELECT
   USING (true);
+
+-- Allow authors to delete open grievances (they can't once it's in-progress or resolved)
+CREATE POLICY "Allow authors to delete open grievances" 
+  ON grievances FOR DELETE 
+  USING (author_email = CURRENT_SETTING('request.jwt.claims', true)::json->>'email' AND status = 'open');

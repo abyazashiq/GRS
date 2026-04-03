@@ -2,7 +2,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, AlertCircle, MessageSquare, CheckCircle, Clock, X, Check } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Send, 
+  AlertCircle, 
+  MessageSquare, 
+  CheckCircle, 
+  Clock, 
+  X, 
+  Check,
+  Users
+} from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
 import {
@@ -15,7 +25,6 @@ import {
 import { formatLocalDateTime, formatRelativeTime } from '@/lib/dateUtils';
 import { Assignment } from '@/lib/supabase/types';
 
-
 export default function TeacherDashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
@@ -23,6 +32,8 @@ export default function TeacherDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [filter, setFilter] = useState<'all' | 'open' | 'in-progress' | 'resolved'>('all');
 
   // For expanded grievance view
   const [expandedGrievanceId, setExpandedGrievanceId] = useState<string | null>(null);
@@ -34,14 +45,20 @@ export default function TeacherDashboardPage() {
 
   const router = useRouter();
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchAssignments = useCallback(async (email: string) => {
     try {
       setLoading(true);
       const data = await getTeacherAssignments(email);
       setAssignments(data as Assignment[] || []);
     } catch (err) {
-      setError('Failed to fetch assigned grievances');
-      console.error(err);
+      setError('Matrix Sync Failure');
     } finally {
       setLoading(false);
     }
@@ -52,12 +69,7 @@ export default function TeacherDashboardPage() {
     const storedName = localStorage.getItem('userName');
     setUserEmail(storedEmail);
     setUserName(storedName);
-
-    if (!storedEmail) {
-      router.push('/login');
-      return;
-    }
-
+    if (!storedEmail) { router.push('/login'); return; }
     fetchAssignments(storedEmail);
   }, [router, fetchAssignments]);
 
@@ -66,7 +78,6 @@ export default function TeacherDashboardPage() {
       setExpandedGrievanceId(null);
       return;
     }
-
     try {
       setLoadingDetails(true);
       const [responses, comments] = await Promise.all([
@@ -77,8 +88,7 @@ export default function TeacherDashboardPage() {
       setComments(comments || []);
       setExpandedGrievanceId(grievanceId);
     } catch (err) {
-      setError('Failed to load grievance details');
-      console.error(err);
+      setError('Deep Record Access Denied');
     } finally {
       setLoadingDetails(false);
     }
@@ -87,335 +97,234 @@ export default function TeacherDashboardPage() {
   const handleUpdateStatus = async (grievanceId: string, newStatus: 'open' | 'in-progress' | 'resolved') => {
     try {
       await updateGrievanceStatus(grievanceId, newStatus);
-      setSuccess(`Status updated to ${newStatus}`);
-
-      // Update local state
-      setAssignments((prev) =>
-        prev.map((a) =>
-          a.grievance_id === grievanceId
-            ? {
-                ...a,
-                grievance: {
-                  ...a.grievance,
-                  status: newStatus,
-                },
-              }
-            : a
-        )
-      );
-
+      setSuccess(`Workflow Updated: ${newStatus}`);
+      setAssignments((prev) => prev.map((a) => a.grievance_id === grievanceId ? { ...a, grievance: { ...a.grievance, status: newStatus } } : a));
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update status');
+      setError('Workflow Lockup Detected');
     }
   };
 
   const handleSendResponse = async (grievanceId: string) => {
-    if (!userEmail || !responseText.trim()) {
-      setError('Please enter a response');
-      return;
-    }
-
+    if (!userEmail || !responseText.trim()) { setError('Null Response Blocked'); return; }
     try {
       setSendingResponse(true);
       await addTeacherResponse(grievanceId, userEmail, responseText, true);
-      setSuccess('Response sent successfully');
+      setSuccess('Packet Transmitted Successfully');
       setResponseText('');
-
-      // Reload responses
       const updatedResponses = await getTeacherResponsesForGrievance(grievanceId);
       setResponses(updatedResponses || []);
-
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send response');
+      setError('Transmission Segment Broken');
     } finally {
       setSendingResponse(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'red';
-      case 'in-progress':
-        return 'yellow';
-      case 'resolved':
-        return 'green';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <AlertCircle className="w-5 h-5" />;
-      case 'in-progress':
-        return <Clock className="w-5 h-5" />;
-      case 'resolved':
-        return <CheckCircle className="w-5 h-5" />;
-      default:
-        return null;
-    }
-  };
+  const filteredAssignments = assignments.filter(a => filter === 'all' || a.grievance.status === filter);
 
   return (
     <ProtectedPage requiredRole="teacher">
-      <div className="min-h-screen bg-[#F0F4FF] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
-        {/* Header */}
-        <header className="bg-white border-b border-[#DBEAFE] shadow-[0_1px_8px_rgba(15,23,42,0.06)] animate-fade-in" style={{ animationDelay: '0s' }}>
-          <div className="max-w-[1200px] mx-auto px-10 py-6 flex items-center justify-between flex-wrap gap-6">
+      <div className="min-h-screen bg-[var(--color-bg-base)] pb-32">
+        {/* Elite Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--color-blue-soft)] animate-blur-in-elite">
+          <div className="max-w-[1400px] mx-auto px-10 py-6 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-[#2563EB] font-semibold hover:underline transition-all"
-              >
-                <ArrowLeft size={18} />
-                Portal
+              <Link href="/dashboard" className="w-12 h-12 flex items-center justify-center bg-[var(--color-bg-subtle)] text-[var(--color-blue-primary)] rounded-[18px] hover:bg-[var(--color-blue-primary)] hover:text-white transition-all spring-lift">
+                <ArrowLeft size={20} strokeWidth={3} />
               </Link>
-              <div className="flex items-center gap-3">
-                <h1 className="text-[24px] font-bold text-[#0F172A] tracking-[-0.4px]">Teacher Dashboard</h1>
-                <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-[6px] uppercase tracking-[0.6px]">
-                  Faculty Access
-                </span>
-              </div>
+              <h1 className="text-2xl font-black text-[var(--color-navy)] flex items-center gap-3">
+                Resolution <span className="text-[var(--color-blue-primary)]">Portal</span>
+              </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-[14px] font-bold text-[#1E3A8A] leading-none">{userName || 'Loading...'}</p>
-                <p className="text-[11px] text-[#94A3B8] font-medium mt-1">{userEmail}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] flex items-center justify-center text-white font-bold shadow-md">
-                {userName?.charAt(0) || 'T'}
-              </div>
+            <div className="flex items-center gap-6">
+               <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-[3px] text-[var(--color-blue-primary)] mb-1">Expert Protocol Active</p>
+                  <p className="text-xs font-bold text-[var(--color-text-dim)]">{currentTime}</p>
+               </div>
             </div>
           </div>
         </header>
 
-        <main className="max-w-[1200px] mx-auto px-10 py-9">
-          {/* Alerts */}
-          {error && (
-            <div className="mb-6 flex items-center gap-3 p-4 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[10px] text-[#DC2626] text-[14px] animate-fade-in shadow-sm">
-              <AlertCircle size={18} className="flex-shrink-0" />
-              <p className="font-medium"><strong>Error:</strong> {error}</p>
-              <button onClick={() => setError('')} className="ml-auto opacity-60 hover:opacity-100 transition-opacity">
-                <X size={18} />
-              </button>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-[#F0FDF4]/50 border border-[#DCFCE7] rounded-[10px] text-[#166534] text-[14px] font-medium animate-fade-in flex items-center gap-3 shadow-sm">
-              <Check size={18} className="text-[#16A34A]" />
-              {success}
-              <button onClick={() => setSuccess('')} className="ml-auto opacity-60 hover:opacity-100 transition-opacity">
-                <X size={18} />
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mb-8 animate-fade-in" style={{ animationDelay: '0.06s' }}>
-            <h2 className="text-[20px] font-bold text-[#0F172A] flex items-center gap-3">
-              <MessageSquare size={22} className="text-[#2563EB]" />
-              Assigned Grievances
-              <span className="text-[12px] font-bold px-2 py-0.5 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-full uppercase tracking-[0.5px]">
-                {assignments.length} Total
-              </span>
+        <main className="max-w-[1200px] mx-auto px-10 pt-40">
+          {/* Animated Greeting */}
+          <div className="mb-16 animate-reveal-elastic">
+            <h2 className="text-4xl font-black text-[var(--color-navy)] tracking-tighter mb-4 leading-none">
+              Greetings, <br />
+              <span className="text-[var(--color-blue-primary)]">Professor {userName?.split(' ')[0]}</span>
             </h2>
+            <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[4px] text-[11px] opacity-70">Authenticated Expert Node: {userEmail}</p>
           </div>
 
-          {loading ? (
-            <p className="text-gray-600">Loading grievances...</p>
-          ) : assignments.length === 0 ? (
-            <div className="bg-white p-8 rounded-lg shadow text-center">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">No grievances assigned to you yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment, index) => {
+          {/* Feedback Messengers */}
+          {error && (
+             <div className="mb-10 p-6 bg-red-50 border border-red-100 rounded-[24px] flex items-center gap-4 text-[var(--color-danger)] font-black animate-reveal-elastic">
+                <AlertCircle size={24} />
+                <span className="uppercase tracking-widest text-xs">{error}</span>
+             </div>
+          )}
+          {success && (
+             <div className="mb-10 p-6 bg-blue-50 border border-blue-100 rounded-[24px] flex items-center gap-4 text-[var(--color-blue-primary)] font-black animate-reveal-elastic">
+                <CheckCircle size={24} />
+                <span className="uppercase tracking-widest text-xs">{success}</span>
+             </div>
+          )}
+
+          {/* Resolution Stream */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                <div className="w-12 h-12 border-4 border-[var(--color-blue-soft)] border-t-[var(--color-blue-primary)] rounded-full animate-spin mb-4" />
+                <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[2px] text-[10px]">Accessing Record Matrix...</p>
+              </div>
+            ) : filteredAssignments.length === 0 ? (
+              <div className="bg-white p-20 rounded-[48px] border border-[var(--color-border)] text-center animate-reveal-elastic shadow-premium-sm">
+                <MessageSquare className="w-16 h-16 text-[var(--color-blue-soft)] mx-auto mb-6" />
+                <p className="text-[var(--color-navy)] font-black text-xl mb-2">No Active Threads Found</p>
+                <p className="text-[var(--color-text-muted)] text-[13px] font-bold">Your resolution queue is currently clear.</p>
+              </div>
+            ) : (
+              filteredAssignments.map((assignment, idx) => {
                 const grievance = assignment.grievance;
                 const isExpanded = expandedGrievanceId === grievance.id;
-
                 return (
-                  <div
-                    key={grievance.id}
-                    className={`bg-white rounded-[16px] border border-[#E2E8F0] shadow-[0_2px_12px_rgba(15,23,42,0.06)] overflow-hidden transition-all animate-fade-in hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] ${isExpanded ? 'ring-[2px] ring-[#2563EB] border-transparent' : 'hover:border-[#DBEAFE]'}`}
-                    style={{ animationDelay: `${0.12 + (index * 0.05)}s` }}
-                  >
-                    {/* Summary Card Content */}
-                    <div
-                      onClick={() => handleExpandGrievance(grievance.id)}
-                      className="p-8 cursor-pointer group"
-                    >
-                      <div className="flex items-start justify-between mb-4 border-b border-[#F1F5F9] pb-4">
-                        <div className="flex-1 min-w-0 pr-8">
-                          <h3 className="text-[17px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors leading-tight">
-                            {grievance.title}
-                          </h3>
-                          <div className="mt-2 flex items-center gap-3">
-                            <span className="text-[12px] font-semibold text-[#94A3B8] uppercase tracking-[0.5px]">{grievance.category}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#CBD5E1]"></span>
-                            <span className="text-[12px] text-[#475569] font-medium">{formatRelativeTime(grievance.created_at)}</span>
+                  <div key={grievance.id} className={`bg-white rounded-[40px] border-2 transition-all animate-reveal-elastic shadow-premium-sm group overflow-hidden ${isExpanded ? 'border-[var(--color-blue-primary)] ring-8 ring-[var(--color-blue-soft)]/20' : 'border-[var(--color-border)] hover:border-[var(--color-blue-soft)] hover:shadow-premium-md'}`} style={{ animationDelay: `${idx * 0.1}s` }}>
+                    <div onClick={() => handleExpandGrievance(grievance.id)} className="p-10 cursor-pointer relative overflow-hidden">
+                       {/* Intensity Bar */}
+                       <div className={`absolute top-0 left-0 w-1 h-full ${grievance.status === 'open' ? 'bg-red-500' : grievance.status === 'in-progress' ? 'bg-[var(--color-blue-primary)]' : 'bg-emerald-500'}`} />
+                       
+                       <div className="flex items-start justify-between mb-8">
+                          <div className="flex-1">
+                             <div className="flex items-center gap-3 mb-3">
+                                <span className="text-[9px] font-black text-[var(--color-blue-primary)] bg-[var(--color-blue-soft)] px-3 py-1 rounded-full uppercase tracking-widest">{grievance.category}</span>
+                                <span className="text-[9px] font-black text-[var(--color-text-dim)] uppercase tracking-widest">{formatRelativeTime(grievance.created_at)}</span>
+                             </div>
+                             <h3 className="text-2xl font-black text-[var(--color-navy)] tracking-tight leading-[1.1]">{grievance.title}</h3>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 bg-white border rounded-[8px] text-[11px] font-bold uppercase tracking-[0.6px] leading-tight
-                              ${grievance.status === 'open' ? 'text-[#DC2626] border-[#FEE2E2] bg-[#FEF2F2]/50' : 
-                                grievance.status === 'in-progress' ? 'text-[#D97706] border-[#FEF3C7] bg-[#FFFBEB]/50' : 
-                                'text-[#166534] border-[#DCFCE7] bg-[#F0FDF4]/50'}`}
-                          >
-                            {getStatusIcon(grievance.status)}
-                            {grievance.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <p className="text-[14px] text-[#475569] leading-relaxed line-clamp-3 italic bg-[#F8FAFF] p-4 rounded-[12px] border border-[#EFF6FF]">
-                          &quot;{grievance.description}&quot;
-                        </p>
-                      </div>
-
-                      <div className="mt-6 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-[#F1F5F9] flex items-center justify-center">
-                            <CheckCircle size={14} className="text-[#94A3B8]" />
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-premium-sm transition-all group-hover:scale-110 ${grievance.status === 'open' ? 'bg-red-50 text-red-500' : grievance.status === 'in-progress' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                             {grievance.status === 'open' ? <AlertCircle size={24} /> : grievance.status === 'in-progress' ? <Clock size={24} /> : <CheckCircle size={24} />}
                           </div>
-                          <span className="text-[13px] text-[#475569] font-medium">
-                            Author: <span className="text-[#1E3A8A]">{grievance.is_anonymous ? 'Protected Identity' : grievance.author_email}</span>
-                          </span>
-                        </div>
-                        <div className="text-[#2563EB] text-[13px] font-bold flex items-center gap-1 transition-all group-hover:gap-2">
-                          {isExpanded ? 'Collapse View' : 'Respond to Student'}
-                          <Send size={14} className={isExpanded ? 'rotate-180' : ''} />
-                        </div>
-                      </div>
+                       </div>
+                       
+                       <div className="p-6 bg-[var(--color-bg-subtle)] rounded-[24px] border border-[var(--color-blue-soft)]/30 group-hover:bg-white transition-all">
+                          <p className="text-[14px] text-[var(--color-text-muted)] font-bold italic leading-relaxed line-clamp-2">&quot;{grievance.description}&quot;</p>
+                       </div>
+
+                       <div className="mt-8 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-full bg-white border border-[var(--color-border)] flex items-center justify-center shadow-sm">
+                                <Users size={16} className="text-[var(--color-blue-primary)]" />
+                             </div>
+                             <p className="text-xs font-black text-[var(--color-navy)] uppercase tracking-wider">Author: <span className="text-[var(--color-blue-primary)]">{grievance.is_anonymous ? 'Classified' : grievance.author_email}</span></p>
+                          </div>
+                          <button className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[2px] text-[var(--color-blue-primary)] group-hover:gap-5 transition-all">
+                             {isExpanded ? 'Collapse Feed' : 'Resolve Interface'}
+                             <ArrowLeft className={isExpanded ? 'rotate-90' : '-rotate-90'} size={14} strokeWidth={4} />
+                          </button>
+                       </div>
                     </div>
 
-                    {/* Expanded Details View */}
+                    {/* Elite Expanded Portal */}
                     {isExpanded && (
-                      <div className="border-t border-[#F1F5F9] p-8 bg-[#F8FAFF] space-y-8 animate-fade-in">
-                        {loadingDetails ? (
-                          <div className="flex items-center gap-3 text-[#94A3B8] text-sm animate-pulse">
-                            <Clock size={16} className="animate-spin" /> Fetching detailed history...
-                          </div>
-                        ) : (
-                          <>
-                            {/* Detailed Description */}
-                            <div className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-sm">
-                              <h4 className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.7px] mb-4">Grievance Narrative</h4>
-                              <p className="text-[15px] text-[#0F172A] leading-[1.6]">{grievance.description}</p>
-                              <div className="mt-4 pt-4 border-t border-[#F1F5F9] flex items-center gap-2 text-[12px] text-[#94A3B8]">
-                                <Clock size={14} /> Full Record Created: {formatLocalDateTime(grievance.created_at)}
-                              </div>
-                            </div>
-
-                            {/* Status Change Module */}
-                            {grievance.status !== 'resolved' && (
-                              <div className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-sm">
-                                <h4 className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.7px] mb-4">Workflow Execution</h4>
-                                <div className="flex flex-wrap gap-4">
-                                  {grievance.status !== 'in-progress' && (
-                                    <button
-                                      onClick={() => handleUpdateStatus(grievance.id, 'in-progress')}
-                                      className="px-6 py-2.5 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-[10px] text-[13px] font-bold hover:bg-[#2563EB] hover:text-white hover:shadow-lg transition-all"
-                                    >
-                                      Mark In Progress
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => handleUpdateStatus(grievance.id, 'resolved')}
-                                    className="px-6 py-2.5 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white rounded-[10px] text-[13px] font-bold shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                                  >
-                                    Resolution Complete
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Response History Section */}
-                            <div className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-sm">
-                              <h4 className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.7px] mb-4">Academic Correspondence ({responses.length})</h4>
-                              {responses.length === 0 ? (
-                                <div className="text-center py-6 bg-[#F8FAFF] rounded-[10px] border border-dashed border-[#DBEAFE]">
-                                  <p className="text-[#94A3B8] text-[13px]">No responses documented for this record.</p>
-                                </div>
-                              ) : (
-                                <div className="space-y-4">
-                                  {responses.map((r) => (
-                                    <div key={r.id} className="p-4 bg-[#F8FAFF] rounded-[10px] border border-[#DBEAFE] relative">
-                                      <p className="text-[14px] text-[#0F172A] leading-relaxed">{r.response_text}</p>
-                                      <p className="text-[11px] text-[#94A3B8] mt-3 font-semibold uppercase tracking-[0.5px]">Sent {formatRelativeTime(r.created_at)}</p>
-                                      <div className="absolute top-4 right-4 text-[#2563EB]/20">
-                                        <Send size={18} />
+                       <div className="p-10 border-t-2 border-[var(--color-blue-soft)] bg-[var(--color-bg-subtle)] animate-reveal-elastic grid grid-cols-1 lg:grid-cols-2 gap-10">
+                          {loadingDetails ? (
+                             <div className="col-span-full py-10 flex items-center justify-center gap-4">
+                                <div className="w-6 h-6 border-4 border-slate-200 border-t-[var(--color-blue-primary)] rounded-full animate-spin" />
+                                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Syncing Deep History...</span>
+                             </div>
+                          ) : (
+                             <>
+                                <div className="space-y-10">
+                                   {/* Detailed Narrative */}
+                                   <div className="bg-white p-8 rounded-[32px] shadow-premium-sm border border-[var(--color-border)]">
+                                      <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[3px] mb-6 flex items-center gap-3">
+                                         <div className="w-1 h-3 bg-[var(--color-blue-primary)] rounded-full" />
+                                         Full Transcript
+                                      </h4>
+                                      <p className="text-[15px] font-bold text-[var(--color-navy)] leading-[1.6] mb-6">{grievance.description}</p>
+                                      <div className="pt-6 border-t border-[var(--color-border)] flex items-center gap-3 text-[10px] font-black text-[var(--color-text-dim)] uppercase tracking-widest">
+                                         <Clock size={14} /> Created: {formatLocalDateTime(grievance.created_at)}
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                                   </div>
 
-                            {/* Submission Flow */}
-                            <div className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-sm">
-                              <h4 className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.7px] mb-4">Dispatch New Response</h4>
-                              <div className="space-y-4">
-                                <textarea
-                                  value={responseText}
-                                  onChange={(e) => setResponseText(e.target.value)}
-                                  placeholder="Provide documented resolution or update for the student..."
-                                  rows={4}
-                                  className="w-full px-4 py-3 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[12px] text-[14px] text-[#0F172A] outline-none focus:border-[#2563EB] focus:ring-[3px] focus:ring-[#2563EB]/12 transition-all"
-                                />
-                                <button
-                                  onClick={() => handleSendResponse(grievance.id)}
-                                  disabled={sendingResponse || !responseText.trim()}
-                                  className="px-8 py-3 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white text-[14px] font-bold rounded-[10px] shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {sendingResponse ? 'Transmitting...' : (
-                                    <>
-                                      <Send size={16} />
-                                      Commit Official Response
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Student/Staff Discussions */}
-                            {comments.length > 0 && (
-                              <div className="bg-white p-6 rounded-[14px] border border-[#E2E8F0] shadow-sm">
-                                <h4 className="text-[12px] font-bold text-[#94A3B8] uppercase tracking-[0.7px] mb-4">Internal Discussion Stream ({comments.length})</h4>
-                                <div className="space-y-4">
-                                  {comments.map((c) => (
-                                    <div key={c.id} className="p-4 bg-[#F1F5F9]/50 rounded-[12px] border border-[#E2E8F0]">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 rounded-full bg-[#CBD5E1] flex items-center justify-center">
-                                          <MessageSquare size={12} className="text-white" />
-                                        </div>
-                                        <p className="text-[12px] font-bold text-[#475569]">
-                                          {c.is_anonymous ? 'Protected Entity' : c.author_email}
-                                        </p>
+                                   {/* Workflow Control */}
+                                   {grievance.status !== 'resolved' && (
+                                      <div className="bg-white p-8 rounded-[32px] shadow-premium-sm border border-[var(--color-border)]">
+                                         <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[3px] mb-6 flex items-center gap-3">
+                                            <div className="w-1 h-3 bg-emerald-500 rounded-full" />
+                                            Workflow Control
+                                         </h4>
+                                         <div className="flex gap-4">
+                                            {grievance.status !== 'in-progress' && (
+                                               <button onClick={() => handleUpdateStatus(grievance.id, 'in-progress')} className="flex-1 py-4 bg-[var(--color-blue-soft)] text-[var(--color-blue-primary)] rounded-[20px] text-xs font-black uppercase tracking-widest hover:bg-[var(--color-blue-primary)] hover:text-white transition-all spring-lift">
+                                                  Initialize
+                                               </button>
+                                            )}
+                                            <button onClick={() => handleUpdateStatus(grievance.id, 'resolved')} className="flex-1 py-4 bg-[var(--color-navy)] text-white rounded-[20px] text-xs font-black uppercase tracking-widest hover:shadow-glow-blue transition-all spring-lift">
+                                               Finalize Resolution
+                                            </button>
+                                         </div>
                                       </div>
-                                      <p className="text-[13px] text-[#0F172A] leading-relaxed">{c.content}</p>
-                                      <p className="text-[11px] text-[#94A3B8] mt-2 italic">{formatRelativeTime(c.created_at)}</p>
-                                    </div>
-                                  ))}
+                                   )}
                                 </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
+
+                                <div className="space-y-10">
+                                   {/* Official Response Channel */}
+                                   <div className="bg-white p-8 rounded-[32px] shadow-premium-sm border border-[var(--color-border)]">
+                                      <h4 className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[3px] mb-6 flex items-center gap-3">
+                                         <div className="w-1 h-3 bg-indigo-500 rounded-full" />
+                                         Dispatch Feed
+                                      </h4>
+                                      <div className="mb-6 space-y-4 max-h-[300px] overflow-y-auto px-1">
+                                         {responses.length === 0 ? (
+                                            <div className="py-10 text-center opacity-30 italic font-bold text-xs uppercase tracking-widest">No Transmissions Logged</div>
+                                         ) : (
+                                            responses.map((r) => (
+                                               <div key={r.id} className="p-5 bg-[var(--color-bg-subtle)] rounded-[20px] relative border border-[var(--color-border)]">
+                                                  <p className="text-[13px] font-bold text-[var(--color-navy)] mb-2 leading-relaxed">{r.response_text}</p>
+                                                  <p className="text-[9px] font-black text-[var(--color-text-dim)] uppercase tracking-widest">{formatRelativeTime(r.created_at)}</p>
+                                               </div>
+                                            ))
+                                         )}
+                                      </div>
+                                      <div className="pt-6 border-t border-[var(--color-border)]">
+                                         <textarea value={responseText} onChange={(e) => setResponseText(e.target.value)} placeholder="Enter resolution data..." className="w-full p-6 bg-[var(--color-bg-subtle)] border-2 border-transparent rounded-[24px] text-sm font-bold text-[var(--color-navy)] outline-none focus:border-[var(--color-blue-soft)] focus:bg-white transition-all mb-4" rows={4} />
+                                         <button onClick={() => handleSendResponse(grievance.id)} disabled={sendingResponse || !responseText.trim()} className="w-full py-4 bg-[var(--color-blue-primary)] text-white rounded-[20px] text-xs font-black uppercase tracking-widest shadow-premium-sm hover:shadow-premium-md transition-all flex items-center justify-center gap-3 action-shimmer disabled:opacity-30">
+                                            {sendingResponse ? 'Transmitting...' : <><Send size={16} strokeWidth={3} /> Commit Response</>}
+                                         </button>
+                                      </div>
+                                   </div>
+                                </div>
+                             </>
+                          )}
+                       </div>
                     )}
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </main>
+
+        {/* Resolution Status Dock */}
+        <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-10 py-5 glass-blue rounded-[36px] shadow-premium-xl animate-reveal-elastic border-[var(--color-blue-soft)] border-2">
+          <div className="flex items-center gap-12">
+            {[
+              { label: 'All', id: 'all', icon: MessageSquare },
+              { label: 'Queued', id: 'open', icon: AlertCircle },
+              { label: 'Active', id: 'in-progress', icon: Clock },
+              { label: 'Closed', id: 'resolved', icon: CheckCircle }
+            ].map((item, idx) => (
+              <button key={idx} onClick={() => setFilter(item.id as any)} className={`flex flex-col items-center gap-2 group transition-all ${filter === item.id ? 'scale-110' : 'opacity-40 hover:opacity-100'}`}>
+                <div className={`w-14 h-14 rounded-[24px] flex items-center justify-center shadow-premium-sm transition-all ${filter === item.id ? 'bg-[var(--color-blue-primary)] text-white rotate-6' : 'bg-white text-[var(--color-blue-primary)] group-hover:rotate-6'}`}>
+                  <item.icon size={22} strokeWidth={3} />
+                </div>
+                <span className="text-[9px] font-black text-[var(--color-blue-deep)] uppercase tracking-[2px]">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
       </div>
     </ProtectedPage>
   );

@@ -1,9 +1,9 @@
 # 📘 GRS - Comprehensive AI Development Guide
 
-**Last Updated**: March 3, 2026 (Admin & Teacher Panels Added)  
+**Last Updated**: April 3, 2026 (Documentation & Reports Overhaul)  
 **Project**: Grievance Redressal System (GRS)  
-**Framework**: Next.js 16 + React 19 + TypeScript + Supabase  
-**Documentation**: AGENTS.md (Root)
+**Framework**: Next.js 15+ + React 19 + TypeScript + Supabase  
+**Documentation**: AGENTS.md (Root) + [README.md](file:///c:/Users/asmit/GRS/GRS/README.md) (Detailed Setup)
 
 ---
 
@@ -654,6 +654,20 @@ git commit -m "Initial commit"
 
 ## 🔄 Recent Changes & Fixes
 
+### Documentation & Reporting Overhaul (April 3, 2026)
+
+**Deliverables Added**:
+- Comprehensive [README.md](file:///c:/Users/asmit/GRS/GRS/README.md) with setup, tech stack, and troubleshooting
+- Project Abstract and Introduction for formal reporting
+- Requirement Engineering table (Sprints 1-5, Epics, User Stories)
+- Detailed Project Outcomes (Functional, Operational, Technical, Strategic)
+
+**Files Changed**:
+- ✅ Created: `README.md` (Root) - Master documentation for users
+- ✅ Updated: `grs/README.md` - Sub-directory specific documentation
+- ✅ Updated: `AGENTS.md` - Synced with latest reporting content
+- ✅ Deleted: `ReadMe` (Root) - Redundant file removal
+
 ### Latest Feature: Admin & Teacher Panels + Role-Based Access (March 3, 2026)
 
 **Features Added**:
@@ -747,6 +761,37 @@ npm run build        # ✅ Passes (production build successful)
 - [ ] Custom workflow stages
 - [ ] Escalation rules
 - [ ] Response templates
+
+---
+
+## 📋 Requirement Engineering
+
+| Sprint# | Epic | User Story# | Requirement/User Story | Essential/Desirable | Description |
+|:---:|---|:---:|---|:---:|---|
+| **1** | Auth | US-1.1 | Google OAuth Integration | **Essential** | Secure login via institutional Google accounts. |
+| **2** | Filing | US-2.1 | Multi-Field Filing Form | **Essential** | Interface for Title, Description, and Category selection. |
+| **3** | Community | US-3.1 | Community Upvoting | **Essential** | Signal urgency for public grievances via upvotes. |
+| **4** | Admin | US-4.1 | Category Management | **Essential** | Admin interface for category and SLA configuration. |
+| **5** | Response | US-5.1 | Teacher Dashboard | **Essential** | Specialized view for teachers to resolve assigned cases. |
+
+---
+
+## 📈 Project Outcomes
+
+### Functional Outcomes
+- **Centralized Digital Hub**: Unified system for all institutional grievances.
+- **Role-Based Access Control**: Tailored workflows for Student, Teacher, and Admin roles.
+- **Identity Privacy**: Hybrid anonymity and public/private visibility toggles.
+
+### Operational Outcomes
+- **Automated Accountability**: Category-specific SLA policies and automated escalations.
+- **Transparency**: Real-time status tracking (Open → In-Progress → Resolved).
+- **Auditability**: Documented response logs and official resolution histories.
+
+### Technical Outcomes
+- **Next.js 15+ & React 19**: Modern frontend for high performance and responsiveness.
+- **Supabase Backend**: Robust PostgreSQL database with complex RLS policies.
+- **Secure OAuth**: Domain-restricted authentication for institutional integrity.
 
 ---
 
@@ -990,18 +1035,19 @@ npm run build
 
 ## 🎯 Update Log
 
-### March 3, 2026 (Latest)
+### April 3, 2026 (Latest)
+- ✅ Overhauled project documentation and created comprehensive README.md
+- ✅ Generated detailed Project Abstract and Introduction for reports
+- ✅ Documented Requirement Engineering table with 5 Sprints
+- ✅ Formalized Project Outcomes across Functional, Operational, and Technical layers
+- ✅ Cleaned up redundant root files (ReadMe)
+
+### March 3, 2026 (Previous)
 - ✅ Created admin dashboard with statistics, grievance management, and user role assignment
 - ✅ Created teacher dashboard with assigned grievances and response system
 - ✅ Implemented role-based access control (student, teacher, admin)
 - ✅ Added grievance visibility system (private/public)
-- ✅ Created ProtectedPage component for role-based route protection
-- ✅ Created roleUtils.ts for role hierarchy and access utilities
-- ✅ Updated schema.sql with users, grievance_assignments, teacher_responses tables
-- ✅ Updated getGrievances to filter based on user role and visibility
-- ✅ Added visibility toggle to GrievanceForm
 - ✅ Fixed teacher dashboard Supabase query issues
-- ✅ Comprehensive tests passed (lint + tsc + build)
 
 ### March 3, 2026 (Earlier)
 - ✅ Improved error logging for better debugging
@@ -1061,7 +1107,7 @@ npm run build
 ---
 
 **Last Maintained By**: AI Assistant  
-**Last Updated**: March 3, 2026  
+**Last Updated**: April 3, 2026  
 **Status**: ✅ Active Development  
 **Documentation Location**: AGENTS.md (Root)  
 **Next Review**: When next feature is added or issue occurs

@@ -127,6 +127,18 @@ export async function createGrievance(
   return data;
 }
 
+export async function deleteGrievance(id: string) {
+  const { error } = await supabase
+    .from('grievances')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Supabase deleteGrievance error:', error);
+    throw new Error(`Deletion failed: ${error.message}`);
+  }
+}
+
 export async function updateGrievanceStatus(id: string, status: 'open' | 'in-progress' | 'resolved') {
   // Use UTC ISO timestamp for consistency with database timezone storage
   const updated_at = new Date().toISOString();

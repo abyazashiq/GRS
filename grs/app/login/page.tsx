@@ -118,103 +118,98 @@ const LoginPage = () => {
   }, [handleGoogleCallback]);
 
   return (
-    <div className="min-h-screen bg-[#F0F4FF] selection:bg-[#BFDBFE] selection:text-[#1E3A8A] font-sans overflow-hidden relative">
-      {/* Background Decor */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#2563EB]/5 rounded-full blur-[100px]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#1E3A8A]/5 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-[var(--color-bg-light)] selection:bg-[var(--color-blue-soft)] selection:text-[var(--color-blue-deep)] font-sans overflow-hidden relative">
+      {/* Premium Background Mesh */}
+      <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-[var(--color-blue-primary)]/5 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] bg-[var(--color-blue-deep)]/5 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
 
       <div className="flex items-center justify-center min-h-screen px-6 py-12 relative z-10">
-        <div className="w-full max-w-[440px] animate-fade-in">
-          {/* Brand Identity */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-[28px] mb-8 bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white shadow-[0_20px_40px_-10px_rgba(37,99,235,0.3)] transform hover:rotate-6 transition-transform">
-              <Building2 className="w-12 h-12" strokeWidth={1.5} />
+        <div className="w-full max-w-[480px] space-y-12">
+          {/* Brand Identity - Premium Scaling */}
+          <div className="text-center animate-blur-in">
+            <div className="inline-flex items-center justify-center w-28 h-28 rounded-[36px] mb-10 bg-gradient-to-br from-[var(--color-blue-deep)] to-[var(--color-blue-primary)] text-white shadow-premium-xl transform hover:rotate-3 transition-transform duration-500 cursor-pointer group">
+              <Building2 className="w-14 h-14 group-hover:scale-110 transition-transform duration-500" strokeWidth={1} />
             </div>
-            <h1 className="text-[42px] font-black text-[#0F172A] tracking-[-2px] leading-none mb-3">
-              GRS <span className="text-[#2563EB]">Portal</span>
+            <h1 className="text-6xl font-black text-[var(--color-navy)] tracking-tighter leading-none mb-4">
+              GRS <span className="text-[var(--color-blue-primary)]">PORTAL</span>
             </h1>
-            <p className="text-[17px] font-bold text-[#1E3A8A] tracking-[-0.5px]">
-              Grievance Redressal System
-            </p>
-            <div className="mt-4 flex flex-col items-center gap-1">
-              <span className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[2px]">SSN Institute level</span>
-              <div className="h-1 w-12 bg-[#2563EB] rounded-full opacity-20" />
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-lg font-bold text-[var(--color-blue-deep)] tracking-tight opacity-80">
+                Institutional Redressal & Resolution
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="h-[2px] w-8 bg-[var(--color-blue-primary)] rounded-full" />
+                <span className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[4px]">SSN COLLEGE OF ENGINEERING</span>
+                <div className="h-[2px] w-8 bg-[var(--color-blue-primary)] rounded-full" />
+              </div>
             </div>
           </div>
 
-          {/* Authentication Card */}
-          <div className="bg-white rounded-[32px] shadow-[0_24px_48px_-12px_rgba(15,23,42,0.12)] p-10 border border-[#DBEAFE] relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#1E3A8A]" />
+          {/* Authentication Card - Sleek Lobby Style */}
+          <div className="bg-white rounded-[40px] shadow-premium-xl p-12 border border-[var(--color-border)] relative overflow-hidden group animate-scale-in">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[var(--color-blue-deep)] via-[var(--color-blue-primary)] to-[var(--color-blue-deep)]" />
             
-            <div className="text-center mb-8">
-              <h2 className="text-[24px] font-bold text-[#0F172A] mb-2 tracking-[-0.5px]">
-                Welcome Back
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-black text-[var(--color-navy)] mb-3 tracking-tight">
+                Authorized Access
               </h2>
-              <p className="text-[14px] text-[#64748B] font-medium leading-relaxed">
-                Secure access for students, staff, and administration via institutional credentials.
+              <p className="text-[15px] text-[var(--color-text-dim)] font-medium leading-relaxed max-w-[280px] mx-auto">
+                Secure gateway for students, faculty, and administrative personnel.
               </p>
             </div>
 
-            {/* Error Feedback */}
+            {/* Error Feedback - High Contrast */}
             {error && (
-              <div className="mb-8 p-4 rounded-[16px] bg-[#FEF2F2] border border-[#FEE2E2] flex items-start gap-4 animate-shake">
-                <AlertCircle className="w-5 h-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
-                <p className="text-[13px] text-[#DC2626] font-bold">{error}</p>
+              <div className="mb-10 p-5 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-4 animate-shake">
+                <AlertCircle className="w-5 h-5 text-[var(--color-danger)] flex-shrink-0 mt-0.5" />
+                <p className="text-[13px] text-[var(--color-danger)] font-black uppercase tracking-wide leading-tight">{error}</p>
               </div>
             )}
 
-            {/* SSO Integration */}
-            <div className="relative group/btn">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#2563EB]/20 to-[#1E3A8A]/20 rounded-full blur opacity-0 group-hover/btn:opacity-100 transition duration-500" />
-              <div className="relative">
+            {/* SSO Integration - Refined Container */}
+            <div className="relative group/btn mb-12">
+              <div className="absolute -inset-2 bg-gradient-to-r from-[var(--color-blue-primary)]/10 to-[var(--color-blue-deep)]/10 rounded-[24px] blur-xl opacity-0 group-hover/btn:opacity-100 transition duration-700" />
+              <div className="relative bg-[var(--color-bg-subtle)] p-1 rounded-[24px] border border-[var(--color-border)] group-hover/btn:border-[var(--color-blue-soft)] transition-colors">
                 <div 
                   id="google-signin-button" 
-                  className="flex justify-center transition-transform hover:scale-[1.02]"
+                  className="flex justify-center transition-transform active:scale-95 py-2"
                 />
               </div>
             </div>
 
-            {/* Protocol Notice */}
-            <div className="mt-8 p-6 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[24px]">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-[12px] bg-white border border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shadow-sm">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Protocol Notice - Institutional Card */}
+            <div className="p-8 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-[32px] group-hover:border-[var(--color-border-alt)] transition-colors">
+              <div className="flex items-start gap-5">
+                <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white border border-[var(--color-border)] flex items-center justify-center text-[var(--color-blue-primary)] shadow-premium-sm group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-[#1E3A8A] mb-1">
-                    First-time Access
+                <div className="space-y-1">
+                  <h3 className="text-[15px] font-black text-[var(--color-blue-deep)] uppercase tracking-wider">
+                    Auto-Provisioning
                   </h3>
-                  <p className="text-[12px] text-[#64748B] font-medium leading-[1.6]">
-                    Accounts are automatically provisioned upon initial login with your <span className="font-bold text-[#0F172A]">@ssn.edu.in</span> domain.
+                  <p className="text-[12px] text-[var(--color-text-dim)] font-bold leading-relaxed">
+                    Identity verified via <span className="text-[var(--color-blue-primary)] font-black">@ssn.edu.in</span>. New accounts are established instantly upon first validation.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-[12px] font-black text-[#94A3B8] uppercase tracking-[2px]">
-              © 2026 SSN IT Department
+          {/* Institutional Footer */}
+          <div className="text-center animate-blur-in" style={{ animationDelay: '0.4s' }}>
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="h-px w-8 bg-[var(--color-border)]" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-blue-primary)] opacity-40" />
+              <div className="h-px w-8 bg-[var(--color-border)]" />
+            </div>
+            <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[5px]">
+              © 2026 OFFICIAL GRIEVANCE SYSTEM
             </p>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-fade-in { animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
-      `}</style>
     </div>
   );
 };

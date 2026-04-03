@@ -9,7 +9,8 @@ import {
   BarChart3,
   X,
   GraduationCap,
-  LayoutDashboard
+  LayoutDashboard,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/app/components/ProtectedPage';
@@ -35,30 +36,27 @@ interface TeacherStats {
 
 export default function AdminDashboardPage() {
   const [userName, setUserName] = useState<string | null>(null);
-  
-  // Categories data
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-
-  // Teachers data
   const [teacherStats, setTeacherStats] = useState<TeacherStats[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
-
-  // Messages
   const [error, setError] = useState('');
-
+  const [currentTime, setCurrentTime] = useState<string>('');
+  
   const router = useRouter();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const storedEmail = localStorage.getItem('userEmail');
     const storedName = localStorage.getItem('userName');
     setUserName(storedName);
-
-    if (!storedEmail) {
-      router.push('/login');
-      return;
-    }
-
+    if (!storedEmail) { router.push('/login'); return; }
     fetchCategoryStats();
     fetchTeacherStats();
   }, [router]);
@@ -67,56 +65,28 @@ export default function AdminDashboardPage() {
     try {
       setLoadingCategories(true);
       const allGrievances = await getGrievances();
-
-      // Count grievances by category
       const categoryMap = new Map<string, number>();
       (allGrievances as Grievance[]).forEach((g) => {
         const count = categoryMap.get(g.category) || 0;
         categoryMap.set(g.category, count + 1);
       });
-
-      const stats: CategoryStats[] = Array.from(categoryMap.entries()).map(([name, count]) => ({
-        name,
-        count,
-      }));
-
+      const stats = Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count }));
       setCategoryStats(stats.sort((a, b) => b.count - a.count));
-    } catch (err) {
-      setError('Failed to fetch category statistics');
-      console.error(err);
-    } finally {
-      setLoadingCategories(false);
-    }
+    } catch (err) { setError('Feeder Sync Failed'); } finally { setLoadingCategories(false); }
   };
 
   const fetchTeacherStats = async () => {
     try {
       setLoadingTeachers(true);
       const teachers = await getAllUsers('teacher');
-      
-      const stats: TeacherStats[] = await Promise.all(
-        (teachers as User[]).map(async (teacher) => {
-          const assignments = (await getTeacherAssignments(teacher.email)) as Assignment[];
-          const resolved = assignments.filter((a) => a.grievance.status === 'resolved').length;
-          const pending = assignments.filter((a) => a.grievance.status !== 'resolved').length;
-          
-          return {
-            email: teacher.email,
-            full_name: teacher.full_name || teacher.email,
-            assignedCount: assignments.length,
-            resolvedCount: resolved,
-            pendingCount: pending,
-          };
-        })
-      );
-
+      const stats = await Promise.all((teachers as User[]).map(async (teacher) => {
+        const assignments = (await getTeacherAssignments(teacher.email)) as Assignment[];
+        const resolved = assignments.filter((a) => a.grievance.status === 'resolved').length;
+        const pending = assignments.filter((a) => a.grievance.status !== 'resolved').length;
+        return { email: teacher.email, full_name: teacher.full_name || teacher.email, assignedCount: assignments.length, resolvedCount: resolved, pendingCount: pending };
+      }));
       setTeacherStats(stats);
-    } catch (err) {
-      setError('Failed to fetch teacher statistics');
-      console.error(err);
-    } finally {
-      setLoadingTeachers(false);
-    }
+    } catch (err) { setError('Expert Matrix Failed'); } finally { setLoadingTeachers(false); }
   };
 
   const totalGrievances = categoryStats.reduce((sum, cat) => sum + cat.count, 0);
@@ -125,247 +95,164 @@ export default function AdminDashboardPage() {
 
   return (
     <ProtectedPage requiredRole="admin">
-      <div className="min-h-screen bg-[#F0F4FA] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
-        {/* Header */}
-        <div className="bg-white animate-fade-in" style={{ animationDelay: '0s' }}>
-          <div className="max-w-[1240px] mx-auto px-8 pt-10 pb-[28px]">
-            <Link href="/dashboard" className="inline-flex items-center text-[#2563EB] font-bold text-[13px] hover:underline mb-8 transition-all group">
-              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-              BACK TO PORTAL
-            </Link>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-5">
-                <h1 className="text-[28px] font-[800] text-[#1E3A8A] tracking-[-0.6px]">Admin Dashboard</h1>
-                <span className="px-3 py-1 bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] text-[#1D4ED8] text-[11px] font-[700] rounded-full border border-[#BFDBFE] uppercase tracking-[0.8px]">
-                  Admin
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-[#64748B] text-[14px] font-medium">{userName || 'Administrator'}</p>
-                  <p className="text-[#94A3B8] text-[11px] font-bold uppercase tracking-[0.5px] leading-none mt-1">Super User</p>
-                </div>
-              </div>
+      <div className="min-h-screen bg-[var(--color-bg-base)] pb-32">
+        {/* Elite Header */}
+        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--color-blue-soft)] animate-blur-in-elite">
+          <div className="max-w-[1400px] mx-auto px-10 py-6 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/dashboard" className="w-12 h-12 flex items-center justify-center bg-[var(--color-bg-subtle)] text-[var(--color-blue-primary)] rounded-[18px] hover:bg-[var(--color-blue-primary)] hover:text-white transition-all spring-lift">
+                <ArrowLeft size={20} strokeWidth={3} />
+              </Link>
+              <h1 className="text-2xl font-black text-[var(--color-navy)] flex items-center gap-3">
+                Command <span className="text-[var(--color-blue-primary)]">Center</span>
+              </h1>
+            </div>
+            <div className="flex items-center gap-6">
+               <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-[3px] text-[var(--color-blue-primary)] mb-1">Administrative Level</p>
+                  <p className="text-xs font-bold text-[var(--color-text-dim)]">{currentTime}</p>
+               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Main Content */}
-        <div className="max-w-[1240px] mx-auto px-8 py-8">
+        <main className="max-w-[1400px] mx-auto px-10 pt-40">
+          {/* Animated Greeting */}
+          <div className="mb-16 animate-reveal-elastic">
+            <h2 className="text-4xl font-black text-[var(--color-navy)] tracking-tighter mb-4 leading-none">
+              Oversight <br />
+              <span className="text-[var(--color-blue-primary)]">Loop Active</span>
+            </h2>
+            <p className="text-[var(--color-text-muted)] font-black uppercase tracking-[4px] text-[11px] opacity-70">Secured Node: {userName}</p>
+          </div>
+
           {error && (
-            <div className="mb-8 p-4 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[14px] flex items-start shadow-sm animate-fade-in">
-              <AlertCircle className="w-5 h-5 text-[#DC2626] mt-0.5 mr-3 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-[#991B1B] font-bold text-sm">System Alert</p>
-                <p className="text-[#B91C1C] text-[13px] font-medium">{error}</p>
-              </div>
-              <button onClick={() => setError('')} className="ml-auto text-[#DC2626] hover:bg-[#FEE2E2] p-1 rounded-md transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+             <div className="mb-10 p-6 bg-red-50 border border-red-100 rounded-[24px] flex items-center gap-4 text-[var(--color-danger)] font-black animate-reveal-elastic">
+                <AlertCircle size={24} />
+                <span className="uppercase tracking-widest text-xs">{error}</span>
+             </div>
           )}
 
-          {/* Stat Cards - 4 Column Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="bg-white p-5 rounded-[14px] border border-[#DDE5F7] shadow-[0_1px_4px_rgba(30,58,138,0.06)] group hover:shadow-[0_4px_16px_rgba(30,58,138,0.04)] transition-all relative overflow-hidden">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[#64748B] text-[11px] font-[700] uppercase tracking-[0.7px]">Total Grievances</p>
-                  <p className="text-[32px] font-[800] text-[#1E3A8A] mt-1 leading-none">{totalGrievances}</p>
+          {/* Elite Bento Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+            {[
+              { label: 'Total Narratives', count: totalGrievances, icon: BarChart3, glow: 'shadow-glow-blue' },
+              { label: 'Unresolved Nodes', count: totalPending, icon: AlertCircle, glow: '' },
+              { label: 'Final Resolutions', count: totalResolved, icon: CheckCircle, glow: '' },
+              { label: 'Faculty Mentors', count: teacherStats.length, icon: Users, glow: '' }
+            ].map((stat, idx) => (
+              <div key={idx} className={`bg-white border border-[var(--color-border)] rounded-[32px] p-8 shadow-premium-sm spring-lift group relative overflow-hidden animate-reveal-elastic`} style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div className="flex justify-between items-start mb-10 relative z-10">
+                   <div className="w-12 h-12 rounded-2xl bg-[var(--color-blue-soft)] text-[var(--color-blue-primary)] flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <stat.icon size={22} strokeWidth={2.5} />
+                   </div>
+                   {stat.glow && <div className="absolute -top-12 -right-12 w-24 h-24 bg-[var(--color-blue-primary)]/10 blur-3xl rounded-full" />}
                 </div>
-                <div className="w-9 h-9 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
-                  <BarChart3 className="w-4 h-4" strokeWidth={2.5} />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-[14px] border border-[#DDE5F7] shadow-[0_1px_4px_rgba(30,58,138,0.06)] group hover:shadow-[0_4px_16px_rgba(30,58,138,0.04)] transition-all relative overflow-hidden">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[#64748B] text-[11px] font-[700] uppercase tracking-[0.7px]">Pending Action</p>
-                  <p className="text-[32px] font-[800] text-[#1E3A8A] mt-1 leading-none">{totalPending}</p>
-                </div>
-                <div className="w-9 h-9 rounded-full bg-[#FEF9EE] flex items-center justify-center text-[#D97706]">
-                  <AlertCircle className="w-4 h-4" strokeWidth={2.5} />
+                <div className="relative z-10">
+                   <p className="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-[3px] mb-2">{stat.label}</p>
+                   <p className="text-5xl font-black text-[var(--color-navy)] leading-none tracking-tighter">{stat.count}</p>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-[14px] border border-[#DDE5F7] shadow-[0_1px_4px_rgba(30,58,138,0.06)] group hover:shadow-[0_4px_16px_rgba(30,58,138,0.04)] transition-all relative overflow-hidden">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[#64748B] text-[11px] font-[700] uppercase tracking-[0.7px]">Resolved Items</p>
-                  <p className="text-[32px] font-[800] text-[#1E3A8A] mt-1 leading-none">{totalResolved}</p>
-                </div>
-                <div className="w-9 h-9 rounded-full bg-[#F0FDF4] flex items-center justify-center text-[#16A34A]">
-                  <X className="w-4 h-4 rotate-45" strokeWidth={2.5} />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-[14px] border border-[#DDE5F7] shadow-[0_1px_4px_rgba(30,58,138,0.06)] group hover:shadow-[0_4px_16px_rgba(30,58,138,0.04)] transition-all relative overflow-hidden">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[#64748B] text-[11px] font-[700] uppercase tracking-[0.7px]">Faculty Experts</p>
-                  <p className="text-[32px] font-[800] text-[#1E3A8A] mt-1 leading-none">{teacherStats.length}</p>
-                </div>
-                <div className="w-9 h-9 rounded-full bg-[#F5F3FF] flex items-center justify-center text-[#7C3AED]">
-                  <Users className="w-4 h-4" strokeWidth={2.5} />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Categories Section */}
-            <div className="lg:col-span-5 bg-white rounded-b-[16px] border border-[#E4EAF4] border-top-[3px] border-t-[#2563EB] shadow-[0_1px_4px_rgba(30,58,138,0.06)] p-7 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
-                  <BarChart3 className="w-5 h-5" strokeWidth={2} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+             {/* Category Performance Hub */}
+             <div className="lg:col-span-5 bg-white rounded-[40px] border border-[var(--color-border)] p-10 shadow-premium-md animate-reveal-elastic" style={{ animationDelay: '0.4s' }}>
+                <div className="flex items-center justify-between mb-12">
+                   <h3 className="text-xl font-black text-[var(--color-navy)] flex items-center gap-3">
+                      <div className="w-2 h-8 bg-[var(--color-blue-primary)] rounded-full" />
+                      Scope Analysis
+                   </h3>
                 </div>
-                <h2 className="text-[16px] font-[700] text-[#1E3A8A]">Grievances by Category</h2>
-              </div>
-
-              {loadingCategories ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="w-6 h-6 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {categoryStats.map((cat) => {
-                    const percentage = totalGrievances > 0 ? (cat.count / totalGrievances) * 100 : 0;
-                    return (
-                      <div key={cat.name} className="group">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[14px] font-bold text-[#475569] group-hover:text-[#1E3A8A] transition-colors">{cat.name}</span>
-                          <span className="text-[11px] font-bold text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-1 rounded-md border border-[#DBEAFE]">
-                            {cat.count} CASES
-                          </span>
-                        </div>
-                        <div className="w-full bg-[#FAFBFF] border border-[#E8EDF8] rounded-full h-[8px] overflow-hidden">
-                          <div
-                            className="bg-gradient-to-r from-[#1E3A8A] to-[#2563EB] h-full rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Workload Section */}
-            <div className="lg:col-span-7 bg-white rounded-b-[16px] border border-[#E4EAF4] border-top-[3px] border-t-[#2563EB] shadow-[0_1px_4px_rgba(30,58,138,0.06)] p-7 animate-fade-in" style={{ animationDelay: '0.25s' }}>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
-                  <Users className="w-5 h-5" strokeWidth={2} />
-                </div>
-                <h2 className="text-[16px] font-[700] text-[#1E3A8A]">Professor Workload</h2>
-              </div>
-
-              {loadingTeachers ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="w-6 h-6 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              ) : (
-                <div className="overflow-hidden border border-[#E8EDF8] rounded-xl bg-[#FAFBFF]">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-[#F3F6FD] border-b border-[#E8EDF8]">
-                        <th className="py-4 px-6 text-[11px] font-[600] text-[#94A3B8] uppercase tracking-[0.8px]">Faculty Expert</th>
-                        <th className="py-4 px-6 text-[11px] font-[600] text-[#94A3B8] uppercase tracking-[0.8px] text-center">Status</th>
-                        <th className="py-4 px-6 text-[11px] font-[600] text-[#94A3B8] uppercase tracking-[0.8px] text-center">Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {teacherStats.map((teacher) => {
-                        const completionRate = teacher.assignedCount > 0 
-                          ? Math.round((teacher.resolvedCount / teacher.assignedCount) * 100)
-                          : 0;
-                        return (
-                          <tr key={teacher.email} className="border-b border-[#F0F4FA] hover:bg-[#F3F6FD] transition-all group">
-                            <td className="py-4 px-6">
-                              <div className="text-[14px] font-[700] text-[#1E293B] group-hover:text-[#2563EB] transition-colors">{teacher.full_name}</div>
-                              <div className="text-[12px] text-[#94A3B8] font-medium">{teacher.email}</div>
-                            </td>
-                            <td className="py-4 px-6 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <span className="text-[13px] font-[800] text-[#1E3A8A]">{teacher.pendingCount}</span>
-                                <span className="text-[11px] font-bold text-[#94A3B8] uppercase">Pending</span>
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">
-                              <div className="flex items-center justify-end gap-3 min-w-[100px]">
-                                <div className="flex-1 bg-[#E8EDF8] rounded-full h-[6px] hidden sm:block">
-                                  <div
-                                    className="bg-[#2563EB] h-full rounded-full"
-                                    style={{ width: `${completionRate}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-[13px] font-[700] text-[#1E3A8A]">{completionRate}%</span>
-                              </div>
-                            </td>
-                          </tr>
-                        );
+                
+                {loadingCategories ? (
+                   <div className="h-64 flex items-center justify-center">
+                      <div className="w-10 h-10 border-4 border-[var(--color-blue-soft)] border-t-[var(--color-blue-primary)] rounded-full animate-spin" />
+                   </div>
+                ) : (
+                   <div className="space-y-8">
+                      {categoryStats.map((cat, i) => {
+                         const percentage = totalGrievances > 0 ? (cat.count / totalGrievances) * 100 : 0;
+                         return (
+                            <div key={cat.name} className="group animate-blur-in-elite" style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
+                               <div className="flex justify-between items-end mb-3">
+                                  <span className="text-sm font-black text-[var(--color-navy)] uppercase tracking-wide">{cat.name}</span>
+                                  <span className="text-[10px] font-black text-[var(--color-blue-primary)] bg-[var(--color-blue-soft)] px-3 py-1 rounded-full">{cat.count} FILES</span>
+                               </div>
+                               <div className="h-2 w-full bg-[var(--color-bg-subtle)] rounded-full overflow-hidden">
+                                  <div className="h-full bg-[var(--color-blue-primary)] rounded-full transition-all duration-1000 origin-left" style={{ width: `${percentage}%` }} />
+                               </div>
+                            </div>
+                         );
                       })}
-                    </tbody>
-                  </table>
+                   </div>
+                )}
+             </div>
+
+             {/* Expert Workload Matrix */}
+             <div className="lg:col-span-7 bg-white rounded-[40px] border border-[var(--color-border)] p-10 shadow-premium-md animate-reveal-elastic" style={{ animationDelay: '0.5s' }}>
+                <div className="flex items-center justify-between mb-12">
+                   <h3 className="text-xl font-black text-[var(--color-navy)] flex items-center gap-3">
+                      <div className="w-2 h-8 bg-[var(--color-blue-sky)] rounded-full" />
+                      Expert Workload
+                   </h3>
                 </div>
-              )}
-            </div>
+
+                {loadingTeachers ? (
+                   <div className="h-64 flex items-center justify-center">
+                      <div className="w-10 h-10 border-4 border-slate-100 border-t-[var(--color-blue-primary)] rounded-full animate-spin" />
+                   </div>
+                ) : (
+                   <div className="overflow-hidden rounded-[24px] border border-[var(--color-border)]">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[var(--color-bg-subtle)] border-b border-[var(--color-border)]">
+                            <th className="py-5 px-8 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[2px]">Faculty Expert</th>
+                            <th className="py-5 px-8 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[2px] text-center">Load</th>
+                            <th className="py-5 px-8 text-[9px] font-black text-[var(--color-text-muted)] uppercase tracking-[2px] text-right">Velocity</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--color-bg-subtle)]">
+                          {teacherStats.map((teacher, i) => {
+                            const rate = teacher.assignedCount > 0 ? Math.round((teacher.resolvedCount / teacher.assignedCount) * 100) : 0;
+                            return (
+                              <tr key={teacher.email} className="group hover:bg-[var(--color-blue-soft)]/30 transition-all animate-blur-in-elite" style={{ animationDelay: `${0.6 + i * 0.05}s` }}>
+                                <td className="py-5 px-8">
+                                  <p className="text-sm font-black text-[var(--color-navy)] group-hover:text-[var(--color-blue-primary)] transition-colors">{teacher.full_name}</p>
+                                  <p className="text-[10px] text-[var(--color-text-dim)] font-bold">{teacher.email}</p>
+                                </td>
+                                <td className="py-5 px-8 text-center font-black text-[var(--color-blue-deep)] text-xs">{teacher.pendingCount} <span className="opacity-40 text-[9px] uppercase tracking-tighter">Active Cases</span></td>
+                                <td className="py-5 px-8 text-right font-black text-[var(--color-blue-primary)]">{rate}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                   </div>
+                )}
+             </div>
           </div>
+        </main>
 
-          {/* Quick Actions Redesign */}
-          <div className="mt-16 animate-fade-in" style={{ animationDelay: '0.35s' }}>
-            <div className="text-center mb-8">
-              <p className="text-[11px] font-[700] text-[#94A3B8] uppercase tracking-[1.5px]">Quick Actions</p>
-              <div className="h-1 w-12 bg-[#DBEAFE] mx-auto mt-2 rounded-full"></div>
-            </div>
-            
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/admin/categories" className="group flex items-center gap-4 bg-white border-[1.5px] border-[#DBEAFE] rounded-[16px] px-7 py-5 shadow-sm hover:border-[#2563EB] hover:bg-[#EFF6FF] hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:-translate-y-1 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] group-hover:scale-110 transition-transform">
-                  <BarChart3 size={20} strokeWidth={2.5} />
+        {/* Admin Floating Command Dock */}
+        <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] px-10 py-5 glass-blue rounded-[36px] shadow-premium-xl animate-reveal-elastic border-[var(--color-blue-soft)] border-2">
+          <div className="flex items-center gap-12">
+            {[
+              { label: 'Portal', href: '/dashboard', icon: LayoutDashboard },
+              { label: 'Tags', href: '/admin/categories', icon: BarChart3 },
+              { label: 'Advisors', href: '/teacher/dashboard', icon: Users },
+              { label: 'Students', href: '/admin/dashboard', icon: GraduationCap }
+            ].map((item, idx) => (
+              <Link key={idx} href={item.href} className="flex flex-col items-center gap-2 group spring-lift">
+                <div className="w-14 h-14 bg-white/80 rounded-[24px] flex items-center justify-center text-[var(--color-blue-primary)] shadow-premium-sm group-hover:bg-[var(--color-blue-primary)] group-hover:text-white transition-all group-hover:rotate-6">
+                  <item.icon size={22} strokeWidth={3} />
                 </div>
-                <div className="text-left">
-                  <p className="text-[15px] font-[700] text-[#1E3A8A]">Manage Categories</p>
-                  <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Edit routing & tags</p>
-                </div>
+                <span className="text-[9px] font-black text-[var(--color-blue-deep)] uppercase tracking-[2px] opacity-60 group-hover:opacity-100 transition-opacity">{item.label}</span>
               </Link>
-
-              <Link href="/admin/sections" className="group flex items-center gap-4 bg-white border-[1.5px] border-[#DBEAFE] rounded-[16px] px-7 py-5 shadow-sm hover:border-[#2563EB] hover:bg-[#EFF6FF] hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:-translate-y-1 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] group-hover:scale-110 transition-transform">
-                  <Users size={20} strokeWidth={2.5} />
-                </div>
-                <div className="text-left" style={{ cursor: 'pointer' }}>
-                  <p className="text-[15px] font-[700] text-[#1E3A8A]">Account Advisors</p>
-                  <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Section assignments</p>
-                </div>
-              </Link>
-
-              <Link href="/admin/students" className="group flex items-center gap-4 bg-white border-[1.5px] border-[#DBEAFE] rounded-[16px] px-7 py-5 shadow-sm hover:border-[#2563EB] hover:bg-[#EFF6FF] hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:-translate-y-1 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] group-hover:scale-110 transition-transform">
-                  <GraduationCap size={20} strokeWidth={2.5} />
-                </div>
-                <div className="text-left">
-                  <p className="text-[15px] font-[700] text-[#1E3A8A]">Student Directory</p>
-                  <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Manage enrollments</p>
-                </div>
-              </Link>
-
-              <Link href="/dashboard" className="group flex items-center gap-4 bg-white border-[1.5px] border-[#E2E8F0] rounded-[16px] px-7 py-5 shadow-sm hover:border-[#94A3B8] hover:bg-[#F8FAFF] hover:-translate-y-1 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center text-[#475569] group-hover:scale-110 transition-transform">
-                  <LayoutDashboard size={20} strokeWidth={2.5} />
-                </div>
-                <div className="text-left">
-                  <p className="text-[15px] font-[700] text-[#475569]">User Portal</p>
-                  <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Back to dashboard</p>
-                </div>
-              </Link>
-            </div>
+            ))}
           </div>
-        </div>
+        </nav>
       </div>
     </ProtectedPage>
   );

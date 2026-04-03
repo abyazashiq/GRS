@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, User, Clock, ThumbsUp, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, User, Clock, ThumbsUp, AlertTriangle, Trash2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { CommentsSection } from '@/app/components/CommentsSection';
-import { getGrievanceById, addUpvote, removeUpvote, getUpvotes } from '@/lib/supabase/db';
+import { getGrievanceById, addUpvote, removeUpvote, getUpvotes, deleteGrievance } from '@/lib/supabase/db';
 import { formatLocalDateTime } from '@/lib/dateUtils';
 
 type Priority = 'Urgent' | 'High' | 'Medium' | 'Low';
@@ -32,8 +32,10 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
   const [upvotes, setUpvotes] = useState<any[]>([]);
   const [hasUpvoted, setHasUpvoted] = useState(false);
   const [upvotingLoading, setUpvotingLoading] = useState(false);
-  const [priorityUpdating, setPriorityUpdating] = useState(false);
   const [priorityMsg, setPriorityMsg] = useState('');
+  const [priorityUpdating, setPriorityUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGrievance();
@@ -56,6 +58,21 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
       console.error('Failed to fetch grievance:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!grievance || !userEmail) return;
+    if (window.confirm("Are you sure? This action cannot be undone.")) {
+      try {
+        setIsDeleting(true);
+        setDeleteError(null);
+        await deleteGrievance(grievanceId);
+        router.push('/dashboard');
+      } catch (err: any) {
+        setDeleteError("This grievance can no longer be deleted as it is being reviewed.");
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -164,13 +181,42 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
   return (
     <div className="min-h-screen bg-[#F0F4FF] font-sans selection:bg-[#BFDBFE] selection:text-[#1E3A8A]">
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white text-[#2563EB] font-bold text-[14px] rounded-full border border-[#DBEAFE] shadow-sm hover:shadow-md hover:-translate-x-1 transition-all mb-10 group"
-        >
-          <ChevronLeft size={18} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
-          Back to Dashboard
-        </Link>
+        <div className="flex items-center justify-between gap-4 mb-10">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white text-[#2563EB] font-bold text-[14px] rounded-full border border-[#DBEAFE] shadow-sm hover:shadow-md hover:-translate-x-1 transition-all group"
+          >
+            <ChevronLeft size={18} strokeWidth={3} className="group-hover:scale-110 transition-transform" />
+            Back to Dashboard
+          </Link>
+
+          {grievance && userEmail === grievance.author_email && grievance.status === 'open' && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-red-50 text-red-500 font-bold text-[14px] rounded-full border border-red-100 shadow-sm hover:bg-red-500 hover:text-white transition-all spring-lift disabled:opacity-30"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} strokeWidth={3} />
+                  Retract Filing
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {deleteError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-[var(--color-danger)] text-[12px] font-black uppercase tracking-widest animate-reveal-elastic">
+            <AlertCircle size={18} />
+            {deleteError}
+          </div>
+        )}
 
         <div className="space-y-10 animate-fade-in">
           {/* Main Content Card */}

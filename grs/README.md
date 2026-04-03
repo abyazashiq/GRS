@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏛️ Grievance Redressal System (GRS)
 
-## Getting Started
+A modern, full-stack platform designed for educational institutions to manage, track, and resolve grievances efficiently.
 
-First, run the development server:
+---
 
+## 🌟 Key Features
+
+### 👨‍🎓 For Students
+- **File Grievances**: Submit complaints with titles, descriptions, and categories.
+- **Visibility Control**: Toggle between **Public** and **Private**.
+- **Anonymity**: Option to post grievances anonymously.
+- **Community Engagement**: Upvote public grievances and engage in discussions.
+
+### 👩‍🏫 For Teachers
+- **Dedicated Dashboard**: Manage assigned grievances and provide official responses.
+- **Status Updates**: Update grievance progress.
+- **Automated Escalations**: Receive notifications for pending grievances based on category-priority policies.
+
+### 👑 For Administrators
+- **User Management**: Promote users to Teacher or Admin roles.
+- **Category Control**: Create, edit, and delete grievance categories.
+- **Escalation Policies**: Configure custom SLA thresholds.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone & Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd grs
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Database Setup (Supabase)
+Run the contents of `schema.sql` in the Supabase SQL Editor.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Environment Configuration
+Create a `.env.local` in this directory:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# Google OAuth
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
-## Learn More
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
-To learn more about Next.js, take a look at the following resources:
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Run the Application
+```bash
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🔧 Development Commands
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command | Action |
+|---------|--------|
+| `npm run dev` | Starts the development server |
+| `npm run build` | Builds the application |
+| `npm run start` | Starts the production server |
+| `npm run lint` | Runs code quality checks |
+| `npx tsc --noEmit` | Runs TypeScript compiler checks |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📄 License
+MIT License.

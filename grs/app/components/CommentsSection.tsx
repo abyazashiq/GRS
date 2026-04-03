@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, AlertCircle } from 'lucide-react';
+import { User, AlertCircle, CheckCircle } from 'lucide-react';
 import { getComments, addComment } from '@/lib/supabase/db';
 import { Comment } from '@/lib/supabase/types';
 import { formatRelativeTime } from '@/lib/dateUtils';
@@ -80,27 +80,30 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   const formatDate = formatRelativeTime;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <h3 className="text-[18px] font-bold text-[#0F172A] tracking-[-0.3px]">
-          Internal Discussion
-        </h3>
-        <span className="px-2.5 py-0.5 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-full text-[11px] font-bold">
-          {comments.length} Response{comments.length !== 1 ? 's' : ''}
-        </span>
+    <div className="space-y-10 animate-slide-up">
+      <div className="flex items-center justify-between border-b border-[var(--color-bg-subtle)] pb-6">
+        <div className="flex items-center gap-4">
+          <h3 className="text-xl font-bold text-[var(--color-navy)] tracking-tight">
+            Internal Discussion
+          </h3>
+          <div className="h-1.5 w-1.5 rounded-full bg-[var(--color-blue-primary)] opacity-40" />
+          <span className="text-[10px] font-black px-3 py-1 bg-[var(--color-blue-soft)] text-[var(--color-blue-primary)] border border-[var(--color-blue-soft)] rounded-full uppercase tracking-widest">
+            {comments.length} Response{comments.length !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
-      <form onSubmit={handleAddComment} className="space-y-4 bg-white border border-[#E2E8F0] rounded-[20px] p-6 shadow-sm">
+      <form onSubmit={handleAddComment} className="space-y-6 bg-white border border-[var(--color-border)] rounded-2xl p-8 shadow-premium-sm hover:shadow-premium-md transition-shadow group animate-scale-in">
         {error && (
-          <div className="flex items-start gap-3 p-3 bg-[#FEF2F2] border border-[#FEE2E2] rounded-[12px] text-[#DC2626] text-[13px] font-bold animate-shake">
+          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl text-[var(--color-danger)] text-[13px] font-bold animate-slide-up">
             <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {!userEmail && (
-          <div className="p-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-[12px] text-[#2563EB] text-[13px] font-bold">
-            Authentication required to participate in discussions.
+          <div className="p-4 bg-[var(--color-blue-soft)] border border-[var(--color-blue-soft)] rounded-xl text-[var(--color-blue-primary)] text-[13px] font-bold">
+            Authentication required to participate in institutional discussions.
           </div>
         )}
 
@@ -108,31 +111,34 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Contribute your perspective..."
+            placeholder="Contribute your perspective to this case..."
             rows={3}
-            className="w-full px-4 py-3 bg-[#F8FAFF] border border-[#DBEAFE] rounded-[14px] text-[#0F172A] text-[15px] font-medium placeholder-[#94A3B8] focus:outline-none focus:ring-[4px] focus:ring-[#2563EB]/10 focus:border-[#2563EB] transition-all resize-none"
+            className="w-full px-5 py-4 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-xl text-[var(--color-navy)] text-[15px] font-semibold placeholder-[var(--color-text-muted)] outline-none focus:ring-4 focus:ring-[var(--color-blue-primary)]/5 transition-all resize-none"
             disabled={!userEmail || submitting}
           />
         </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-3 px-3 py-2 bg-[#F8FAFF] border border-[#DBEAFE] rounded-full">
-            <input
-              type="checkbox"
-              id="comment-anonymous"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-4 h-4 text-[#2563EB] border-[#DBEAFE] rounded-[4px] focus:ring-[#2563EB]/20 transition-all cursor-pointer"
-              disabled={!userEmail || submitting}
-            />
-            <label htmlFor="comment-anonymous" className="text-[12px] font-bold text-[#1E3A8A] cursor-pointer selection:none">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+          <div className="flex items-center gap-3 px-5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-full group-hover:border-[var(--color-border-alt)] transition-colors">
+            <div className="relative">
+              <input
+                type="checkbox"
+                id="comment-anonymous"
+                checked={isAnonymous}
+                onChange={(e) => setIsAnonymous(e.target.checked)}
+                className="w-4 h-4 text-[var(--color-blue-primary)] border-[var(--color-border)] rounded-[4px] focus:ring-[var(--color-blue-primary)]/20 transition-all cursor-pointer appearance-none checked:bg-[var(--color-blue-primary)] border-2 bg-white"
+                disabled={!userEmail || submitting}
+              />
+              {isAnonymous && <CheckCircle size={12} className="absolute inset-0 m-auto text-white pointer-events-none" strokeWidth={4} />}
+            </div>
+            <label htmlFor="comment-anonymous" className="text-[11px] font-black text-[var(--color-blue-deep)] cursor-pointer uppercase tracking-widest">
               Publish Anonymously
             </label>
           </div>
 
           <button
             type="submit"
-            className="px-6 py-2.5 bg-[#2563EB] text-white rounded-full text-[13px] font-bold hover:bg-[#1E40AF] shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-8 py-3 bg-[var(--color-blue-primary)] text-white rounded-xl text-sm font-bold hover:bg-[var(--color-blue-deep)] shadow-premium-md hover:shadow-premium-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
             disabled={!userEmail || submitting}
           >
             {submitting ? 'Dispatching...' : 'Dispatch Contribution'}
@@ -140,49 +146,53 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         </div>
       </form>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {loading ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-24 bg-[#F8FAFF] border border-[#E2E8F0] rounded-[16px] animate-pulse" />
+              <div key={i} className="h-32 bg-[var(--color-bg-subtle)] border border-[var(--color-border)] rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : comments.length === 0 ? (
-          <div className="text-center py-12 bg-[#F8FAFF] border border-dashed border-[#DBEAFE] rounded-[16px]">
-            <p className="text-[#94A3B8] text-[14px] font-medium italic">Establishing the dialogue... be the first to contribute.</p>
+          <div className="text-center py-20 bg-[var(--color-bg-subtle)] border-2 border-dashed border-[var(--color-border)] rounded-2xl">
+            <p className="text-[var(--color-text-muted)] text-[14px] font-semibold italic tracking-tight">Establishing the dialogue... be the first to contribute.</p>
           </div>
         ) : (
-          comments.map((comment, idx) => (
-            <div
-              key={comment.id}
-              className="p-5 bg-white border border-[#E2E8F0] rounded-[16px] shadow-sm hover:shadow-md transition-shadow group animate-fade-in"
-              style={{ animationDelay: `${idx * 0.05}s` }}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#2563EB]">
-                    <User size={16} strokeWidth={2.5} />
+          <div className="space-y-4">
+            {comments.map((comment, idx) => (
+              <div
+                key={comment.id}
+                className="p-6 bg-white border border-[var(--color-border)] rounded-2xl shadow-premium-sm hover:shadow-premium-md transition-all group animate-slide-up"
+                style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--color-blue-soft)] flex items-center justify-center text-[var(--color-blue-primary)] border border-[var(--color-blue-soft)] group-hover:scale-110 transition-transform">
+                      <User size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-[var(--color-navy)] leading-none mb-1.5">
+                        {comment.is_anonymous ? 'Restricted Identity' : (comment.author_email?.split('@')[0] || 'Contributor')}
+                      </p>
+                      <p className="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-widest">
+                        {formatDate(comment.created_at)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[14px] font-bold text-[#0F172A]">
-                      {comment.is_anonymous ? 'Identity Concealed' : (comment.author_email?.split('@')[0] || 'Contributor')}
-                    </p>
-                    <p className="text-[11px] text-[#94A3B8] font-bold uppercase tracking-[0.5px]">
-                      {formatDate(comment.created_at)}
-                    </p>
-                  </div>
+                  {comment.is_anonymous && (
+                    <span className="px-3 py-1 bg-[var(--color-bg-subtle)] text-[var(--color-text-dim)] text-[9px] font-black uppercase tracking-[1.5px] rounded-lg border border-[var(--color-border)] shadow-premium-sm">
+                      Verified Anonymous
+                    </span>
+                  )}
                 </div>
-                {comment.is_anonymous && (
-                  <span className="px-2 py-0.5 bg-[#F1F5F9] text-[#64748B] text-[9px] font-black uppercase tracking-[1px] rounded-full">
-                    Verified Anonymous
-                  </span>
-                )}
+                <div className="pl-14">
+                  <p className="text-[15px] text-[var(--color-text-main)] font-medium leading-relaxed bg-[var(--color-bg-subtle)]/50 p-4 rounded-xl border border-transparent group-hover:border-[var(--color-border)] transition-all">
+                    {comment.content}
+                  </p>
+                </div>
               </div>
-              <p className="text-[14px] text-[#475569] font-medium leading-relaxed pl-11">
-                {comment.content}
-              </p>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
