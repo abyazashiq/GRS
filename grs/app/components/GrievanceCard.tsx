@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ThumbsUp, MessageSquare, Clock, User, Trash2, AlertCircle } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Clock, User, Trash2, AlertCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/dateUtils';
 
@@ -21,6 +21,7 @@ interface GrievanceCardProps {
   hasUpvoted: boolean;
   onDelete?: (id: string) => void;
   isAuthor?: boolean;
+  isEscalated?: boolean;
 }
 
 export const GrievanceCard: React.FC<GrievanceCardProps> = ({
@@ -39,9 +40,19 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
   hasUpvoted,
   onDelete,
   isAuthor,
+  isEscalated,
 }) => {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [, setTick] = React.useState(0);
+
+  // Force re-render of relative timestamps every 60s
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(prev => prev + 1);
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
   const statusStyles: Record<string, string> = {
     open: 'bg-[var(--color-blue-primary)] text-white shadow-glow-blue',
     'in-progress': 'bg-[var(--color-blue-deep)] text-white opacity-90',
@@ -67,6 +78,12 @@ export const GrievanceCard: React.FC<GrievanceCardProps> = ({
               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-[2px] font-accent transition-all animate-reveal-elastic ${statusStyles[status]}`}>
                 {status.replace('-', ' ')}
               </span>
+              {isEscalated && (
+                <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 shadow-sm flex items-center gap-1 font-accent animate-reveal-elastic">
+                  <AlertTriangle size={8} className="animate-pulse" />
+                  <span className="uppercase tracking-[2px]">Escalated</span>
+                </span>
+              )}
             </div>
             <h3 className="text-xl font-black text-[var(--color-navy)] tracking-tight mb-3 group-hover:text-[var(--color-blue-primary)] transition-colors leading-[1.2]">
               {title}

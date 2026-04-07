@@ -32,6 +32,9 @@ CREATE TABLE grievances (
   author_email TEXT,
   is_anonymous BOOLEAN DEFAULT FALSE,
   visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('private', 'public')),
+  current_escalation_level INTEGER DEFAULT 0,
+  is_escalated BOOLEAN DEFAULT FALSE,
+  escalation_reason TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

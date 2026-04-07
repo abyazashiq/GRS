@@ -17,10 +17,20 @@ export function formatRelativeTime(dateString: string): string {
   }
   
   const diffMs = now.getTime() - date.getTime();
+  
+  // Handle future dates or near-zero differences
+  if (diffMs < 0) {
+    if (Math.abs(diffMs) < 60000) return 'Just now'; // Within 1 minute
+    // If it's more than a minute in the "future", it's likely a timezone mismatch.
+    // We'll treat it as Just now for better UX.
+    return 'Just now';
+  }
+
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
+  if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;

@@ -2,10 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, User, Clock, ThumbsUp, AlertTriangle, Trash2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, User, Clock, ThumbsUp, AlertTriangle, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { CommentsSection } from '@/app/components/CommentsSection';
-import { getGrievanceById, addUpvote, removeUpvote, getUpvotes, deleteGrievance } from '@/lib/supabase/db';
+import { 
+  getGrievanceById, 
+  addUpvote, 
+  removeUpvote, 
+  getUpvotes, 
+  deleteGrievance,
+  escalateGrievance 
+} from '@/lib/supabase/db';
 import { formatLocalDateTime } from '@/lib/dateUtils';
 
 type Priority = 'Urgent' | 'High' | 'Medium' | 'Low';
@@ -36,6 +43,11 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
   const [priorityUpdating, setPriorityUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showEscalationForm, setShowEscalationForm] = useState(false);
+  const [escalationReason, setEscalationReason] = useState('');
+  const [isEscalating, setIsEscalating] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchGrievance();
@@ -122,6 +134,28 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
       setPriorityMsg('Update failed');
     } finally {
       setPriorityUpdating(false);
+    }
+  };
+
+  const handleEscalate = async (reason: string) => {
+    if (!grievance || !userEmail) return;
+    try {
+      const nextLevel = (grievance.current_escalation_level || 0) + 1;
+      await escalateGrievance(grievanceId, reason, nextLevel);
+      
+      // Update local state and show success
+      setGrievance((prev: any) => ({
+        ...prev,
+        status: 'in-progress',
+        is_escalated: true,
+        current_escalation_level: nextLevel,
+        escalation_reason: reason
+      }));
+      setSuccess('Grievance Escalated Successfully');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err: any) {
+      setError(err.message || 'Escalation Transmission Failed');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
@@ -219,9 +253,80 @@ export const GrievanceDetail: React.FC<GrievanceDetailProps> = ({ userEmail, use
         )}
 
         <div className="space-y-10 animate-fade-in">
-          {/* Main Content Card */}
-          <article className="bg-white border border-[#E2E8F0] rounded-[32px] p-10 shadow-[0_4px_32px_rgba(15,23,42,0.03)] selection:bg-[#BFDBFE]">
-            <div className="flex flex-col gap-6 mb-10">
+            {/* Escalation Appeal Section */}
+            {grievance.status === 'resolved' && userEmail === grievance.author_email && !showEscalationForm && (
+              <div className="mt-10 p-10 bg-red-50 border border-red-100 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-8 animate-reveal-elastic">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center animate-pulse">
+                    <AlertTriangle size={32} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-red-900 tracking-tight mb-1">Unsatisfied with Resolution?</h3>
+                    <p className="text-sm font-bold text-red-700/70">You can appeal this decision to a higher institutional authority.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowEscalationForm(true)}
+                  className="px-10 py-5 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-[2px] shadow-lg hover:bg-red-700 transition-all spring-lift action-shimmer"
+                >
+                  Initiate Formal Appeal
+                </button>
+              </div>
+            )}
+
+            {showEscalationForm && (
+              <div className="mt-10 p-10 bg-[var(--color-bg-base)] border border-[var(--color-border)] rounded-[32px] animate-reveal-elastic shadow-premium-sm">
+                <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6 flex items-center gap-3">
+                  <div className="w-1.5 h-6 bg-red-500 rounded-full" />
+                  Institutional Appeal Reasoning
+                </h3>
+                <textarea
+                  value={escalationReason}
+                  onChange={(e) => setEscalationReason(e.target.value)}
+                  placeholder="Provide precise grounds for appeal to enable high-level review..."
+                  className="w-full p-8 bg-white border border-slate-200 rounded-[24px] text-base font-bold text-slate-800 outline-none focus:ring-8 focus:ring-red-500/5 transition-all mb-8 resize-none shadow-inner"
+                  rows={4}
+                />
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowEscalationForm(false)}
+                    className="flex-1 py-5 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-[2px] hover:bg-slate-50 transition-all spring-lift"
+                  >
+                    Cancel Appeal
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!escalationReason.trim()) return;
+                      setIsEscalating(true);
+                      await handleEscalate(escalationReason);
+                      setIsEscalating(false);
+                      setShowEscalationForm(false);
+                    }}
+                    disabled={isEscalating || !escalationReason.trim()}
+                    className="flex-[2] py-5 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-[2px] shadow-lg hover:shadow-red-500/20 transition-all spring-lift action-shimmer disabled:opacity-30"
+                  >
+                    {isEscalating ? 'Transmitting Appeal...' : 'Commit Formal Appeal'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-10 p-6 bg-red-50 border border-red-100 rounded-[28px] text-red-600 font-black text-xs uppercase tracking-widest flex items-center gap-4 animate-reveal-elastic">
+                <AlertTriangle size={20} />
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mt-10 p-6 bg-blue-50 border border-blue-100 rounded-[28px] text-blue-600 font-black text-xs uppercase tracking-widest flex items-center gap-4 animate-reveal-elastic">
+                <CheckCircle size={20} />
+                {success}
+              </div>
+            )}
+
+            {/* Main Content Card */}
+            <article className="bg-white border border-[#E2E8F0] rounded-[32px] p-10 shadow-[0_4px_32px_rgba(15,23,42,0.03)] selection:bg-[#BFDBFE]">
+              <div className="flex flex-col gap-6 mb-10">
 
               {/* Badges row */}
               <div className="flex flex-wrap items-center gap-2">

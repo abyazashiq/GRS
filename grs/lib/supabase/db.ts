@@ -32,6 +32,9 @@ export async function getGrievances(
       author_email,
       is_anonymous,
       visibility,
+      is_escalated,
+      current_escalation_level,
+      escalation_reason,
       created_at,
       updated_at,
       upvotes:upvotes(count),
@@ -88,6 +91,10 @@ export async function getGrievanceById(id: string) {
       author_id,
       author_email,
       is_anonymous,
+      visibility,
+      is_escalated,
+      current_escalation_level,
+      escalation_reason,
       created_at,
       updated_at
     `
@@ -150,6 +157,41 @@ export async function updateGrievanceStatus(id: string, status: 'open' | 'in-pro
     .single();
 
   if (error) throw error;
+  return data;
+}
+
+export async function escalateGrievance(id: string, reason: string, toLevel: number) {
+  const updated_at = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('grievances')
+    .update({
+      status: 'in-progress',
+      is_escalated: true,
+      current_escalation_level: toLevel,
+      escalation_reason: reason,
+      updated_at,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase escalateGrievance error:', error);
+    throw new Error(`Escalation failed: ${error.message}`);
+  }
+
+  // Log in escalation history
+  const { error: histError } = await supabase
+    .from('grievance_escalations')
+    .insert({
+      grievance_id: id,
+      from_level: toLevel - 1,
+      to_level: toLevel,
+      reason: reason,
+    });
+
+  if (histError) console.warn('History log failed:', histError.message);
+
   return data;
 }
 

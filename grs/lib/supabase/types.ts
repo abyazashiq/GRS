@@ -7,6 +7,10 @@ export interface Grievance {
   author_id: string | null;
   author_email: string | null;
   is_anonymous: boolean;
+  visibility: 'private' | 'public';
+  current_escalation_level: number;
+  is_escalated: boolean;
+  escalation_reason: string | null;
   created_at: string;
   updated_at: string;
   upvotes?: Array<{ count: number }>;

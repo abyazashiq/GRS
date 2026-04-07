@@ -31,6 +31,9 @@ interface GrievanceData {
   author_email: string | null;
   is_anonymous: boolean;
   visibility: 'private' | 'public';
+  is_escalated: boolean;
+  current_escalation_level: number;
+  escalation_reason: string | null;
   created_at: string;
   upvotes: Array<{ count: number }>;
   comments: Array<{ count: number }>;
@@ -301,6 +304,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       hasUpvoted={userUpvotes.has(g.id)}
                       onDelete={handleDeleteGrievance}
                       isAuthor={g.author_email === userEmail}
+                      isEscalated={g.is_escalated}
                     />
                   </div>
                 ))
